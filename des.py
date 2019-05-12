@@ -151,8 +151,10 @@ def nsplit(s, n):#Split a list into sublists of size "n"
 
 def bit_array_to_hex(*args):
     hexstr = ''
+    bit_list = []
     for arg in args:
-        hexstr += hex(string_to_int(bit_array_to_string(arg)))[2:]
+        bit_list += arg 
+    hexstr += hex(string_to_int(bit_array_to_string(bit_list)))[2:]
     return '0x' + hexstr
 
 def string_to_hex(text):
@@ -201,7 +203,7 @@ class des():
 
         block = self.permut(block,PI)#Apply the initial permutation
         g, d = nsplit(block, 32) #g(LEFT), d(RIGHT)
-        lr_inter.append(bit_array_to_hex(g,d))
+        lr_inter.append(bit_array_to_hex(block))
         tmp = None
         for i in range(16): #Do the 16 rounds
             d_e = self.expand(d, E) #Expand d to match Ki size (48bits)
@@ -254,7 +256,7 @@ class des():
 
         key = self.permut(key, CP_1) #Apply the initial permut on the key
         g, d = nsplit(key, 28) #Split it in to (g->LEFT),(d->RIGHT)
-        cd_inter.append(bit_array_to_hex(g,d))
+        cd_inter.append(bit_array_to_hex(key))
         for i in range(16):#Apply the 16 rounds
             g, d = self.shift(g, d, SHIFT[i]) #Apply the shift associated with the round (not always 1)
             tmp = g + d #Merge them
@@ -287,8 +289,6 @@ if __name__ == '__main__':
     r2 = d.decrypt(key,r)
     print("Ciphered: %r" % r)
     print("Deciphered: ", r2)
-else:
-    print("Imported as module")
 
 
 # import des as despy
