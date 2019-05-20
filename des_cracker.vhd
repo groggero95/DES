@@ -49,9 +49,10 @@ architecture rtl of des_cracker is
 	signal k0 	   : std_ulogic_vector(55 downto 0);
 	signal k  	   : std_ulogic_vector(55 downto 0);
 	signal k1 	   : std_ulogic_vector(55 downto 0);
+	signal k_in    : std_ulogic_vector(55 downto 0);
+	signal k_des   : std_ulogic_vector(63 downto 0);
 	signal c_out   : std_ulogic_vector(63 downto 0);
 	signal des_en  : std_ulogic;
-	signal k_in    : std_ulogic_vector(55 downto 0);
 	signal k_pipe  : ulogic56_array(15 downto 0);
 	signal stall_k : std_ulogic;
 	signal load_k1 : std_ulogic;
@@ -64,10 +65,10 @@ architecture rtl of des_cracker is
 begin
 
 	des0 : des  generic map (NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH)
-				port map (clk => aclk, rst => aresetn, en => des_en, p => p, k => k_in, c => c_out);
+				port map (clk => aclk, rst => aresetn, en => des_en, p => p, k => k_des, c => c_out);
 
-	
-
+	-- Append dummy bit to the key instead of the parity, they are not used anyway
+	k_des <= k_in(55 downto 49) & '0' & k_in(48 downto 42) & '0' & k_in(41 downto 35) & '0' & k_in(34 downto 28) & '0' & k_in(27 downto 21) & '0' & k_in(20 downto 14) & '0' & k_in(13 downto 7) & '0' & k_in(6 downto 0) & '0';
 
 	nState : process(aclk)
 	begin
@@ -76,10 +77,12 @@ begin
 				c_state_r <= IDLE;
 				c_state_w <= IDLE;
 				c_state_a <= WAITING;
+				c_state_k <= WAIT_LOW;
 			else
 				c_state_r <= n_state_r;
 				c_state_w <= n_state_w;
 				c_state_a <= n_state_a;
+				c_state_k <= n_state_k;
 			end if;
 		end if;
 	end process ; -- nState
@@ -213,6 +216,9 @@ begin
 		if aclk'event and aclk = '1' then
 			if aresetn = '0' then
 				s0_axi_bresp <= (others => '0');
+				p <= (others => '0');
+				c <= (others => '0');
+				k0 <= (others => '0');
 			else
 				if n_state_w = ACKRREQ then
 					case (s0_axi_awaddr) is
@@ -250,7 +256,9 @@ begin
 								n_state_a <= WAITING;
 							end if;
 
-			when START => if c_out = c then
+			when START => 	if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000100" then
+								n_state_a <= WAITING;
+							elsif c_out = c then
 								n_state_a <= FOUND;
 							else
 								n_state_a <= START;
@@ -276,7 +284,7 @@ begin
 							irq <= '0';
 						  	load_k1 <= '0';
 
-			when START 	=> 	if n_state_a = FOUND then
+			when START 	=> 	if n_state_a = FOUND or n_state_a = WAITING then
 								des_en <= '0';
 							else
 								des_en <= '1';
@@ -309,7 +317,7 @@ begin
 	counter : process(aclk)
 	begin
 	  	if (aclk'event and aclk = '1') then
-		  	if n_state_a = START and c_state_a = WAITING then
+		  	if (n_state_a = START and c_state_a = WAITING) or aresetn = '0' then
 	  			k_in <= k0;
 	  		else
 	    		k_in <= std_ulogic_vector(unsigned(k_in) + 1);
@@ -318,20 +326,24 @@ begin
 	end process counter;
 
 
-	k_pipe(0) <= k_in;
+	--k_pipe(0) <= k_in;
 
 	led <= k(33 downto 30);
 
 	k_del : process (aclk)
 	begin
 		if (aclk'event and aclk = '1') then
-			if (aresetn = '0') then
-				for i in 1 to 15 loop
+			if (aresetn = '0' or des_en = '0') then
+				for i in 0 to 15 loop
 					k_pipe(i) <= (others => '0');
 				end loop;
 			else 
-				shifter : for i in 1 to 15 loop
-					k_pipe(i) <= k_pipe(i-1);
+				shifter : for i in 0 to 15 loop
+					if i = 0 then
+						k_pipe(i) <= k_in;
+					else
+						k_pipe(i) <= k_pipe(i-1);
+					end if;
 				end loop;
 			end if;
 		end if;
@@ -350,16 +362,16 @@ begin
 		end if;
 	end process k_reg;
 
-	readKlogicIn : process(c_state_k,n_state_r,s0_axi_awaddr)
+	readKlogicIn : process(c_state_k,n_state_r,s0_axi_araddr)
 	begin
 		case (c_state_k) is
-			when WAIT_LOW => if n_state_r = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000110" then
+			when WAIT_LOW => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000110" then
 								n_state_k <= WAIT_HIGH;
 							else
 								n_state_k <= WAIT_LOW;
 							end if;
 
-			when WAIT_HIGH => if n_state_r = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000111" then
+			when WAIT_HIGH => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000111" then
 								n_state_k <= WAIT_LOW;
 							else
 								n_state_k <= WAIT_HIGH;

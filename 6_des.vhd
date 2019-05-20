@@ -35,7 +35,7 @@ architecture des_arc of des is
 begin
 
 	des_gen : for i in 0 to 16 generate
-		fl_step : if (i = 0) generate
+		start_pipe : if (i = 0) generate
 
 			-- Plaintext encryption part
 			ff_init_c : dq_ff generic map (NB => NB_DW) port map (clk => clk ,rst => rst , en => en, D => p, Q => lr_pipe(i));
@@ -46,8 +46,9 @@ begin
 			ff_init_k : dq_ff generic map (NB => NB_DW) port map (clk => clk ,rst => rst ,en => en,D => k,Q => k_start);
 			init_k : p_box generic map (NB_I => NB_DW, NB_O => NB_KE, P_ARRAY => PC1) port map (d_in => k_start, p_out => cd_n(i));
 			key_init_k : k_gen generic map (NB => NB_KEH, NB_K => NB_K, SH => SHIFT(i), P_ARRAY => PC2) port map (c_in => cd_n(i)(1 to NB_KE/2), d_in => cd_n(i)(NB_KE/2 + 1 to NB_KE), c_out => cd_n(i+1)(1 to NB_KE/2), d_out => cd_n(i+1)(NB_KE/2 + 1 to NB_KE), k_out => k_n(i));
+		end generate start_pipe;
 
-		elsif (i /= 16) generate			
+		middle_pipe : if (i /= 16 and i /=0) generate			
 
 			-- Plaintext encryption part
 			ff_c_i : dq_ff generic map (NB => NB_DW) port map (clk => clk, rst => rst, en => en, D => lr_n(i), Q => lr_pipe(i));
@@ -57,14 +58,20 @@ begin
 			ff_k_i : dq_ff generic map (NB => NB_KE) port map (clk => clk ,rst => rst ,en => en,D => cd_n(i),Q => cd_pipe(i));
 			key_i : k_gen generic map (NB => NB_KEH, NB_K => NB_K, SH => SHIFT(i), P_ARRAY => PC2) port map (c_in => cd_pipe(i)(1 to NB_KE/2), d_in => cd_pipe(i)(NB_KE/2 + 1 to NB_KE), c_out => cd_n(i+1)(1 to NB_KE/2), d_out => cd_n(i+1)(NB_KE/2 + 1 to NB_KE), k_out => k_n(i));
 
-		else generate
+		end generate middle_pipe;
+
+
+		end_pipe: if (i = 16) generate
+
 			-- In the last iteraation we do not reverse L and R so restore them
 			lr_rev <=  lr_n(i)(NB_DW/2+1 to NB_DW) & lr_n(i)(1 to NB_DW/2);
+
 			-- Plaintext encryption part
 			last_c 	: p_box generic map (NB_I => NB_DW, NB_O => NB_DW, P_ARRAY => FP) port map (d_in => lr_rev, p_out => c_final);
 			ff_last : dq_ff generic map (NB => NB_DW) port map (clk => clk, rst => rst, en => en, D => c_final, Q => c);
-
-		end generate fl_step;
+		end generate end_pipe;
 	end generate des_gen;
+
+
 
 end des_arc;
