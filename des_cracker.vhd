@@ -64,8 +64,8 @@ architecture rtl of des_cracker is
 
 begin
 
-	des0 : des  generic map (NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH)
-				port map (clk => aclk, rst => aresetn, en => des_en, p => p, k => k_des, c => c_out);
+	des0 : des  generic map	(NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH)
+				port map 	(clk => aclk, rst => aresetn, en => des_en, p => p, k => k_des, c => c_out);
 
 	-- Append dummy bit to the key instead of the parity, they are not used anyway
 	k_des <= k_in(55 downto 49) & '0' & k_in(48 downto 42) & '0' & k_in(41 downto 35) & '0' & k_in(34 downto 28) & '0' & k_in(27 downto 21) & '0' & k_in(20 downto 14) & '0' & k_in(13 downto 7) & '0' & k_in(6 downto 0) & '0';
@@ -93,8 +93,6 @@ begin
 		case (c_state_r) is
 			when IDLE 	=> 	if s0_axi_arvalid = '1' then
 								n_state_r <= ACKRREQ;
-							else
-								n_state_r <= IDLE;
 							end if;
 
 			when ACKRREQ => if s0_axi_rready = '1' then
@@ -105,10 +103,8 @@ begin
 
 			when WAITACK => if s0_axi_rready = '1' then
 								n_state_r <= IDLE;
-							else
-								n_state_r <= WAITACK;
 							end if;
-
+							
 			when others =>	null;
 		end case;
 
@@ -119,16 +115,16 @@ begin
 		s0_axi_arready 	<= '0';
 		s0_axi_rvalid 	<= '0';
 		case (c_state_r) is
-			when IDLE 	=>
-							s0_axi_arready <= '0';
-							s0_axi_rvalid <= '0';
-			when ACKRREQ =>
-							s0_axi_arready <= '1';
-							s0_axi_rvalid <= '1';
+			when IDLE 		=>
+								null;
+			when ACKRREQ 	=>
+								s0_axi_arready <= '1';
+								s0_axi_rvalid <= '1';
+
 			when WAITACK =>
-							s0_axi_arready <= '0';
-							s0_axi_rvalid <= '1';
-			when others =>	null;
+								s0_axi_rvalid <= '1';
+
+			when others =>		null;
 		end case;
 
 	end process ; -- readlogicOut
@@ -169,14 +165,12 @@ begin
 	end process ; -- readOutSync
 
 
-	writelogicIn : process(c_state_w,s0_axi_wvalid,s0_axi_awvalid,s0_axi_bready)
+	writelogicIn : process(c_state_w, s0_axi_wvalid, s0_axi_awvalid, s0_axi_bready)
 	begin
 		n_state_w <= c_state_w;
 		case (c_state_w) is
 			when IDLE 	=> 	if (s0_axi_awvalid = '1' and s0_axi_wvalid = '1') then
 								n_state_w <= ACKRREQ;
-							else
-								n_state_w <= IDLE;
 							end if;
 
 			when ACKRREQ => if s0_axi_bready = '1' then
@@ -187,8 +181,6 @@ begin
 
 			when WAITACK => if s0_axi_bready = '1' then
 								n_state_w <= IDLE;
-							else
-								n_state_w <= WAITACK;
 							end if;
 
 			when others =>	null;
@@ -198,22 +190,20 @@ begin
 
 	writelogicOut : process(c_state_w)
 	begin
-		s0_axi_wready <= '0';
-		s0_axi_awready <= '0';
-		s0_axi_bvalid <= '0';
+		s0_axi_wready 	<= '0';
+		s0_axi_awready 	<= '0';
+		s0_axi_bvalid 	<= '0';
 		case (c_state_w) is
-			when IDLE 	=>
-							s0_axi_wready <= '0';
-							s0_axi_awready <= '0';
-							s0_axi_bvalid <= '0';
-			when ACKRREQ =>
-							s0_axi_wready <= '1';
-							s0_axi_awready <= '1';
-							s0_axi_bvalid <= '1';
+			when IDLE		=> null;
+
+			when ACKRREQ 	=>
+							s0_axi_wready 	<= '1';
+							s0_axi_awready 	<= '1';
+							s0_axi_bvalid 	<= '1';
+
 			when WAITACK =>
-							s0_axi_wready <= '0';
-							s0_axi_awready <= '0';
-							s0_axi_bvalid <= '1';
+							s0_axi_bvalid 	<= '1';
+
 			when others =>	null;
 		end case;
 
@@ -261,20 +251,15 @@ begin
 		case (c_state_a) is
 			when WAITING => if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000101" then
 								n_state_a <= START;
-							else
-								n_state_a <= WAITING;
 							end if;
 
 			when START => 	if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000100" then
 								n_state_a <= WAITING;
 							elsif c_out = c then
 								n_state_a <= FOUND;
-							else
-								n_state_a <= START;
 							end if;
 
-			when FOUND =>
-									n_state_a <= WAITING;
+			when FOUND =>	n_state_a <= WAITING;
 
 			when others =>	null;
 		end case;
@@ -285,29 +270,19 @@ begin
 
 	attacklogicOut : process(c_state_a, n_state_a)
 	begin
-		irq 		<= '0';
+		irq 	<= '0';
 		load_k1 <= '0';
 		des_en 	<= '0';
 		case (c_state_a) is
 			when WAITING =>	if n_state_a = START then
 								des_en <= '1';
-							else
-								des_en <= '0';
 							end if;
-							irq <= '0';
-						  load_k1 <= '0';
 
-			when START 	=> 	if n_state_a = FOUND or n_state_a = WAITING then
-								des_en <= '0';
-							else
+			when START 	=> 	if not(n_state_a = FOUND or n_state_a = WAITING) then
 								des_en <= '1';
 							end if;
-						  irq <= '0';
-						  load_k1 <= '0';
 
-			when FOUND	=>
-								des_en <= '0';
-						  	irq <= '1';
+			when FOUND	=> 	irq <= '1';
 						  	load_k1 <= '1';
 
 			when others =>	null;
@@ -376,19 +351,16 @@ begin
 		end if;
 	end process k_reg;
 
-	readKlogicIn : process(c_state_k,n_state_r,s0_axi_araddr)
+	readKlogicIn : process(c_state_k, n_state_r, s0_axi_araddr)
 	begin
+		n_state_k <= c_state_k;
 		case (c_state_k) is
 			when WAIT_LOW => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000110" then
 								n_state_k <= WAIT_HIGH;
-							else
-								n_state_k <= WAIT_LOW;
 							end if;
 
 			when WAIT_HIGH => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000111" then
 								n_state_k <= WAIT_LOW;
-							else
-								n_state_k <= WAIT_HIGH;
 							end if;
 
 			when others =>	null;
@@ -400,16 +372,13 @@ begin
 
 	readKlogicOut : process(c_state_k,n_state_k)
 	begin
+		stall_k <= '0';
 		case (c_state_k) is
 			when WAIT_LOW =>	if n_state_k = WAIT_HIGH then
 									stall_k <= '1';
-								else
-									stall_k <= '0';
 								end if;
 
-			when WAIT_HIGH => 	if n_state_k = WAIT_LOW then
-									stall_k <= '0';
-								else
+			when WAIT_HIGH => 	if n_state_k /= WAIT_LOW then
 									stall_k <= '1';
 								end if;
 
