@@ -10,27 +10,27 @@ generic (	NB_DW  : integer := 64;
 			NB_KE  : integer := 56;
 			NB_KEH : integer := 28
 	);
-port( 
+port(
 	aclk			: 	in 	std_ulogic;
 	aresetn			: 	in  std_ulogic;
-	s0_axi_araddr	: 	in 	std_ulogic_vector(11 downto 0);	
-	s0_axi_arvalid	: 	in 	std_ulogic;	
-	s0_axi_arready	: 	out	std_ulogic;	
-	s0_axi_awaddr	: 	in 	std_ulogic_vector(11 downto 0);	
-	s0_axi_awvalid	: 	in 	std_ulogic;	
-	s0_axi_awready	: 	out	std_ulogic;	
-	s0_axi_wdata	: 	in 	std_ulogic_vector(31 downto 0);	
-	s0_axi_wstrb	: 	in 	std_ulogic_vector( 3 downto 0);	
-	s0_axi_wvalid	: 	in 	std_ulogic;	
-	s0_axi_wready	: 	out	std_ulogic;	
-	s0_axi_rdata	: 	out	std_ulogic_vector(31 downto 0);	
-	s0_axi_rresp	: 	out	std_ulogic_vector( 1 downto 0);	
-	s0_axi_rvalid	: 	out	std_ulogic;	
-	s0_axi_rready	: 	in 	std_ulogic;	
-	s0_axi_bresp	: 	out	std_ulogic_vector( 1 downto 0);	
-	s0_axi_bvalid	: 	out	std_ulogic;	
-	s0_axi_bready	: 	in 	std_ulogic;	
-	irq				: 	out	std_ulogic;	
+	s0_axi_araddr	: 	in 	std_ulogic_vector(11 downto 0);
+	s0_axi_arvalid	: 	in 	std_ulogic;
+	s0_axi_arready	: 	out	std_ulogic;
+	s0_axi_awaddr	: 	in 	std_ulogic_vector(11 downto 0);
+	s0_axi_awvalid	: 	in 	std_ulogic;
+	s0_axi_awready	: 	out	std_ulogic;
+	s0_axi_wdata	: 	in 	std_ulogic_vector(31 downto 0);
+	s0_axi_wstrb	: 	in 	std_ulogic_vector( 3 downto 0);
+	s0_axi_wvalid	: 	in 	std_ulogic;
+	s0_axi_wready	: 	out	std_ulogic;
+	s0_axi_rdata	: 	out	std_ulogic_vector(31 downto 0);
+	s0_axi_rresp	: 	out	std_ulogic_vector( 1 downto 0);
+	s0_axi_rvalid	: 	out	std_ulogic;
+	s0_axi_rready	: 	in 	std_ulogic;
+	s0_axi_bresp	: 	out	std_ulogic_vector( 1 downto 0);
+	s0_axi_bvalid	: 	out	std_ulogic;
+	s0_axi_bready	: 	in 	std_ulogic;
+	irq				: 	out	std_ulogic;
 	led				: 	out	std_ulogic_vector( 3 downto 0)
 );
 end des_cracker;
@@ -57,10 +57,10 @@ architecture rtl of des_cracker is
 	signal stall_k : std_ulogic;
 	signal load_k1 : std_ulogic;
 
-	constant OKAY : std_ulogic_vector(1 downto 0) := "00"; 
-	constant EXOKAY : std_ulogic_vector(1 downto 0) := "01"; 
-	constant SLVERR : std_ulogic_vector(1 downto 0) := "10"; 
-	constant DECERR : std_ulogic_vector(1 downto 0) := "11"; 
+	constant OKAY : std_ulogic_vector(1 downto 0) := "00";
+	constant EXOKAY : std_ulogic_vector(1 downto 0) := "01";
+	constant SLVERR : std_ulogic_vector(1 downto 0) := "10";
+	constant DECERR : std_ulogic_vector(1 downto 0) := "11";
 
 begin
 
@@ -72,7 +72,7 @@ begin
 
 	nState : process(aclk)
 	begin
-		if aclk'event and aclk ='1' then
+		if rising_edge(aclk) then
 			if aresetn = '0' then
 				c_state_r <= IDLE;
 				c_state_w <= IDLE;
@@ -89,6 +89,7 @@ begin
 
 	readlogicIn : process(c_state_r,s0_axi_arvalid,s0_axi_rready)
 	begin
+		n_state_r <= c_state_r;
 		case (c_state_r) is
 			when IDLE 	=> 	if s0_axi_arvalid = '1' then
 								n_state_r <= ACKRREQ;
@@ -110,29 +111,32 @@ begin
 
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- readlogicIn
 
 	readlogicOut : process(c_state_r)
 	begin
+		s0_axi_arready 	<= '0';
+		s0_axi_rvalid 	<= '0';
 		case (c_state_r) is
-			when IDLE 	=> 	s0_axi_arready <= '0';
+			when IDLE 	=>
+							s0_axi_arready <= '0';
 							s0_axi_rvalid <= '0';
-
-			when ACKRREQ => s0_axi_arready <= '1';
+			when ACKRREQ =>
+							s0_axi_arready <= '1';
 							s0_axi_rvalid <= '1';
-
-			when WAITACK =>	s0_axi_arready <= '0';
+			when WAITACK =>
+							s0_axi_arready <= '0';
 							s0_axi_rvalid <= '1';
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- readlogicOut
 
 	readOutSync : process( aclk )
 	begin
 		if aclk'event and aclk = '1' then
-			if aresetn = '0' then 
+			if aresetn = '0' then
 				s0_axi_rresp <= (others => '0');
 				s0_axi_rdata <= (others => '0');
 			elsif n_state_r = ACKRREQ then
@@ -167,6 +171,7 @@ begin
 
 	writelogicIn : process(c_state_w,s0_axi_wvalid,s0_axi_awvalid,s0_axi_bready)
 	begin
+		n_state_w <= c_state_w;
 		case (c_state_w) is
 			when IDLE 	=> 	if (s0_axi_awvalid = '1' and s0_axi_wvalid = '1') then
 								n_state_w <= ACKRREQ;
@@ -188,27 +193,30 @@ begin
 
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- writelogicIn
 
 	writelogicOut : process(c_state_w)
 	begin
+		s0_axi_wready <= '0';
+		s0_axi_awready <= '0';
+		s0_axi_bvalid <= '0';
 		case (c_state_w) is
-			when IDLE 	=> 	s0_axi_wready <= '0';
+			when IDLE 	=>
+							s0_axi_wready <= '0';
 							s0_axi_awready <= '0';
 							s0_axi_bvalid <= '0';
-
-			when ACKRREQ => s0_axi_wready <= '1';
+			when ACKRREQ =>
+							s0_axi_wready <= '1';
 							s0_axi_awready <= '1';
 							s0_axi_bvalid <= '1';
-
-			when WAITACK =>	s0_axi_wready <= '0';
+			when WAITACK =>
+							s0_axi_wready <= '0';
 							s0_axi_awready <= '0';
 							s0_axi_bvalid <= '1';
-
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- writelogicOut
 
 	writeOutSync : process( aclk )
@@ -238,7 +246,7 @@ begin
 							 "000000011100" | "000000011101" | "000000011110" | "000000011111"  |
 							 "000000100000" | "000000100001" | "000000100010" | "000000100011"  |
 							 "000000100100" | "000000100101" | "000000100110" | "000000100111"  =>	s0_axi_bresp <= SLVERR;
-					
+
 						when others => 	s0_axi_bresp <= DECERR;
 					end case;
 				end if;
@@ -247,8 +255,9 @@ begin
 	end process ; -- writeOutSync
 
 
-	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr,c_out,c)
+	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr, c_out, c)
 	begin
+		n_state_a <= c_state_a;
 		case (c_state_a) is
 			when WAITING => if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000101" then
 								n_state_a <= START;
@@ -264,17 +273,21 @@ begin
 								n_state_a <= START;
 							end if;
 
-			when FOUND => n_state_a <= WAITING;
+			when FOUND =>
+									n_state_a <= WAITING;
 
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- attacklogicIn
 
 
 
-	attacklogicOut : process(c_state_a,n_state_a)
+	attacklogicOut : process(c_state_a, n_state_a)
 	begin
+		irq 		<= '0';
+		load_k1 <= '0';
+		des_en 	<= '0';
 		case (c_state_a) is
 			when WAITING =>	if n_state_a = START then
 								des_en <= '1';
@@ -282,23 +295,24 @@ begin
 								des_en <= '0';
 							end if;
 							irq <= '0';
-						  	load_k1 <= '0';
+						  load_k1 <= '0';
 
 			when START 	=> 	if n_state_a = FOUND or n_state_a = WAITING then
 								des_en <= '0';
 							else
 								des_en <= '1';
 							end if;
-						  	irq <= '0';
-						  	load_k1 <= '0';
+						  irq <= '0';
+						  load_k1 <= '0';
 
-			when FOUND	=> 	des_en <= '0';
+			when FOUND	=>
+								des_en <= '0';
 						  	irq <= '1';
 						  	load_k1 <= '1';
 
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- attacklogicOut
 
 	k1_reg : process (aclk)
@@ -306,7 +320,7 @@ begin
 		if (aclk'event and aclk = '1') then
 			if (aresetn = '0') then
 				k1 <= (others => '0');
-			else 
+			else
 				if load_k1 = '1' then
 					k1 <= k;
 				end if;
@@ -337,7 +351,7 @@ begin
 				for i in 0 to 15 loop
 					k_pipe(i) <= (others => '0');
 				end loop;
-			else 
+			else
 				shifter : for i in 0 to 15 loop
 					if i = 0 then
 						k_pipe(i) <= k_in;
@@ -354,7 +368,7 @@ begin
 		if (aclk'event and aclk = '1') then
 			if (aresetn = '0') then
 				k <= (others => '0');
-			else 
+			else
 				if stall_k = '0' then
 					k <= k_pipe(15);
 				end if;
@@ -379,7 +393,7 @@ begin
 
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- readKlogicIn
 
 
@@ -401,7 +415,7 @@ begin
 
 			when others =>	null;
 		end case;
-		
+
 	end process ; -- readKlogicOut
 
 
