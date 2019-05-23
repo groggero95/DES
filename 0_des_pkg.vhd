@@ -27,6 +27,19 @@ package des_pkg is
 											14,  6, 61, 53, 45, 37, 29,
 											21, 13,  5, 28, 20, 12,  4);
 
+
+
+	-- Used to generate subkeys
+	constant PC1_INV : int_array(1 to 56) :=   ( 8, 16, 24, 56, 52, 44, 36,
+												 7, 15, 23, 55, 51, 43, 35,
+												 6, 14, 22, 54, 50, 42, 34,
+												 5, 13, 21, 53, 49, 41, 33,
+												 4, 12, 20, 28, 48, 40, 32,
+												 3, 11, 19, 27, 47, 39, 31,
+												 2, 10, 18, 26, 46, 38, 30,
+												 1,  9, 17, 25, 45, 37, 29);
+
+
 	-- Used to generate subkeys
 	constant PC2 : int_array(1 to 48) :=   (14, 17, 11, 24,  1,  5,
 											 3, 28, 15,  6, 21, 10,
@@ -216,9 +229,10 @@ package des_pkg is
 		clk	: 	in 	std_ulogic;
 		rst	: 	in  std_ulogic;
 		en 	: 	in  std_ulogic;
-		p	: 	in 	std_ulogic_vector(1 to NB_DW);	-- plaintext
-		k	: 	in 	std_ulogic_vector(1 to NB_DW); -- key
-		c	:	out std_ulogic_vector(1 to NB_DW) 	-- cyphertext
+		p	: 	in 	std_ulogic_vector(1 to NB_DW); -- plaintext
+		k	: 	in 	std_ulogic_vector(1 to NB_DW); -- input key
+		k_c :	out std_ulogic_vector(1 to NB_KE); -- key of the current cyphertext
+		c	:	out std_ulogic_vector(1 to NB_DW)  -- cyphertext
 	);
 	end component;
 

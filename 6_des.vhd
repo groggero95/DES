@@ -14,22 +14,24 @@ port(
 	clk	: 	in 	std_ulogic;
 	rst	: 	in  std_ulogic;
 	en 	: 	in  std_ulogic;
-	p	: 	in 	std_ulogic_vector(1 to NB_DW);	-- plaintext
-	k	: 	in 	std_ulogic_vector(1 to NB_DW); -- key
-	c	:	out std_ulogic_vector(1 to NB_DW) 	-- cyphertext
+	p	: 	in 	std_ulogic_vector(1 to NB_DW); -- plaintext
+	k	: 	in 	std_ulogic_vector(1 to NB_DW); -- input key
+	k_c :	out std_ulogic_vector(1 to NB_KE); -- key of the current cyphertext
+	c	:	out std_ulogic_vector(1 to NB_DW)  -- cyphertext
 );
 end des;
 
 architecture des_arc of des is
 
-	signal c_final : std_ulogic_vector(1 to NB_DW);
-	signal k_start : std_ulogic_vector(1 to NB_DW);
-	signal lr_n : ulogic64_array(0 to 16);
-	signal lr_pipe : ulogic64_array(0 to 16);
-	signal lr_rev : std_ulogic_vector(1 to NB_DW);
-	signal k_n : ulogic48_array(0 to 15);
-	signal cd_n : ulogic56_array(0 to 16);
-	signal cd_pipe : ulogic56_array(1 to 15);
+	signal c_final 	: std_ulogic_vector(1 to NB_DW);
+	signal k_start 	: std_ulogic_vector(1 to NB_DW);
+	signal lr_n 	: ulogic64_array(0 to 16);
+	signal lr_pipe 	: ulogic64_array(0 to 16);
+	signal lr_rev 	: std_ulogic_vector(1 to NB_DW);
+	signal k_c_pipe : std_ulogic_vector(1 to NB_KE);
+	signal k_n 		: ulogic48_array(0 to 15);
+	signal cd_n 	: ulogic56_array(0 to 16);
+	signal cd_pipe 	: ulogic56_array(1 to 15);
 
 
 begin
@@ -72,6 +74,8 @@ begin
 		end generate end_pipe;
 	end generate des_gen;
 
-
+	-- This p bos is used to rebuilt a 56 bit version of the input key, i.e. without 
+	k_reb 		: p_box generic map (NB_I => NB_KE, NB_O => NB_KE, P_ARRAY => PC1_INV) port map (d_in => cd_n(16), p_out => k_c_pipe);
+	ff_key_reb 	: dq_ff generic map (NB => NB_KE) port map (clk => clk, rst => rst, en => en, D => k_c_pipe, Q => k_c);
 
 end des_arc;

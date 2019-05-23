@@ -16,6 +16,7 @@ architecture des_tb_arc of des_tb is
 	signal p	: std_ulogic_vector(1 to NB); -- plaintext
 	signal k	: std_ulogic_vector(1 to NB); -- key
 	signal c	: std_ulogic_vector(1 to NB); -- cyphertext
+	signal k_c 	: std_ulogic_vector(1 to NB-8);
 
 begin
 
@@ -29,7 +30,7 @@ begin
 
 	p <= x"0123456789ABCDEF";
 
-	dut : des port map (clk => clk, rst => rst, en => en, p => p, k => k, c => c);	
+	dut : des port map (clk => clk, rst => rst, en => en, p => p, k => k, k_c => k_c, c => c);	
 
 end architecture des_tb_arc;
 
