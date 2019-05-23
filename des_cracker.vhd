@@ -105,7 +105,7 @@ begin
 			when WAITACK => if s0_axi_rready = '1' then
 								n_state_r <= IDLE;
 							end if;
-							
+
 			when others =>	null;
 		end case;
 
@@ -256,7 +256,7 @@ begin
 
 			when START => 	if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000100" then
 								n_state_a <= WAITING;
-							elsif c_out = c then
+							elsif k_found = '1' then
 								n_state_a <= FOUND;
 							end if;
 
@@ -272,7 +272,6 @@ begin
 	attacklogicOut : process(c_state_a, n_state_a)
 	begin
 		irq 	<= '0';
-		load_k1 <= '0';
 		des_en 	<= '0';
 		case (c_state_a) is
 			when WAITING =>	if n_state_a = START then
@@ -284,7 +283,6 @@ begin
 							end if;
 
 			when FOUND	=> 	irq <= '1';
-						  	load_k1 <= '1';
 
 			when others =>	null;
 		end case;
@@ -297,8 +295,8 @@ begin
 			if (aresetn = '0') then
 				k1 <= (others => '0');
 			else
-				if load_k1 = '1' then
-					k1 <= k;
+				if k_found = '1' then
+					k1 <= k_right;
 				end if;
 			end if;
 		end if;

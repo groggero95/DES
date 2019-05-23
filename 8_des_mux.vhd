@@ -20,24 +20,24 @@ port(
 	c_target	:	in	std_ulogic_vector(1 to NB_DW); 	-- cyphertext
 	k_high		:	out std_ulogic_vector(1 to NB_KE);	-- highest key
 	k_right		:	out std_ulogic_vector(1 to NB_KE);	-- right key when found
-	k_found		:	out std_ulogic;						-- set if key found
-	
+	k_found		:	out std_ulogic						-- set if key found
 );
 end des_mux;
 
 architecture des_mux_arc of des_mux is
 	
-	signal k_mux is array 0 to DES_N-1 of std_ulogic_vector(1 downto NB_DW);
-	signal c_mux is array 0 to DES_N-1 of std_ulogic_vector(1 downto NB_DW);
-	signal k_result is array 0 to DES_N-1 of std_ulogic_vector(1 downto NB_KE);
+	signal k_mux: ulogic64_array(0 to DES_N-1); 
+	signal c_mux: ulogic64_array(0 to DES_N-1); 
+	signal k_result: ulogic56_array(0 to DES_N-1); 
 
 begin
 	
 	-- Generate N_DES k to be passed to the cracker(s)
-	k_proc: process(k)
-	   variable k_temp : std_ulogic_vector(NB_KE-1 downto 0);	
+	k_proc: process(k_start)
+	   variable k_temp : std_ulogic_vector(NB_KE-1 downto 0);
+	begin
 		k_assign: for i in 0 to DES_N loop
-			k_temp := std_ulogic_vector((unsigned(k)+unsigned(i), k_mux(i)'length);
+			k_temp := std_ulogic_vector(unsigned(k_start) + i);
 			k_mux(i) <=  k_temp(55 downto 49) & '0' & k_temp(48 downto 42) & '0' & k_temp(41 downto 35) & '0' & k_temp(34 downto 28) & '0' & k_temp(27 downto 21) & '0' & k_temp(20 downto 14) & '0' & k_temp(13 downto 7) & '0' & k_temp(6 downto 0) & '0';
 		end loop;
 	end process;
@@ -49,14 +49,14 @@ begin
 	end generate des_mux_gen;
 	
 	--Process to check if a key is the right one 
-	check_found: process(c_mux, c_target, k_mux)
+	check_found: process(c_mux, c_target, k_result)
+	begin
 		k_found <= '0';
 		k_right <= (others => '0');
-
 		for i in 0 to DES_N-1 loop
 			if (c_mux(i) = c_target) then
-				k_found := '1';
-				k_right := k_result(i);
+				k_found <= '1';
+				k_right <= k_result(i);
 			end if;
 		end loop;
 	end process;

@@ -253,7 +253,7 @@ package des_pkg is
 		c_target	:	in	std_ulogic_vector(1 to NB_DW); 	-- cyphertext
 		k_high		:	out std_ulogic_vector(1 to NB_KE);	-- highest key
 		k_right		:	out std_ulogic_vector(1 to NB_KE);	-- right key when found
-		k_found		:	out std_ulogic;						-- set if key found	
+		k_found		:	out std_ulogic						-- set if key found	
 	);
 	end component;
 
