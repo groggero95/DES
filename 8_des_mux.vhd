@@ -16,7 +16,7 @@ port(
 	rst			: 	in  std_ulogic;
 	en			: 	in  std_ulogic;
 	p			: 	in 	std_ulogic_vector(1 to NB_DW);	-- plaintext
-	k_start		: 	in 	std_ulogic_vector(1 to NB_DW);	-- key base
+	k_start		: 	in 	std_ulogic_vector(1 to NB_KE);	-- key base
 	c_target	:	in	std_ulogic_vector(1 to NB_DW); 	-- cyphertext
 	k_high		:	out std_ulogic_vector(1 to NB_KE);	-- highest key
 	k_right		:	out std_ulogic_vector(1 to NB_KE);	-- right key when found
@@ -36,7 +36,7 @@ begin
 	k_proc: process(k_start)
 	   variable k_temp : std_ulogic_vector(NB_KE-1 downto 0);
 	begin
-		k_assign: for i in 0 to DES_N loop
+		k_assign: for i in 0 to DES_N-1 loop
 			k_temp := std_ulogic_vector(unsigned(k_start) + i);
 			k_mux(i) <=  k_temp(55 downto 49) & '0' & k_temp(48 downto 42) & '0' & k_temp(41 downto 35) & '0' & k_temp(34 downto 28) & '0' & k_temp(27 downto 21) & '0' & k_temp(20 downto 14) & '0' & k_temp(13 downto 7) & '0' & k_temp(6 downto 0) & '0';
 		end loop;

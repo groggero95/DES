@@ -249,7 +249,7 @@ package des_pkg is
 		rst			: 	in  std_ulogic;
 		en			: 	in  std_ulogic;
 		p			: 	in 	std_ulogic_vector(1 to NB_DW);	-- plaintext
-		k_start		: 	in 	std_ulogic_vector(1 to NB_DW);	-- key base
+		k_start		: 	in 	std_ulogic_vector(1 to NB_KE);	-- key base
 		c_target	:	in	std_ulogic_vector(1 to NB_DW); 	-- cyphertext
 		k_high		:	out std_ulogic_vector(1 to NB_KE);	-- highest key
 		k_right		:	out std_ulogic_vector(1 to NB_KE);	-- right key when found

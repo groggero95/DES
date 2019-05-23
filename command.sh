@@ -1,0 +1,2 @@
+alias sintesi='vivado -mode batch -source /home/giulio/Desktop/DES/des_cracker.syn.tcl -notrace -tclargs des_cracker'
+alias compila='vcom -work myLib -2008 /home/giulio/Desktop/DES/0_des_pkg.vhd /home/giulio/Desktop/DES/1_ff.vhd /home/giulio/Desktop/DES/2_p_box.vhd /home/giulio/Desktop/DES/3_s_box.vhd /home/giulio/Desktop/DES/4_k_gen.vhd /home/giulio/Desktop/DES/5_f.vhd /home/giulio/Desktop/DES/6_des.vhd /home/giulio/Desktop/DES/7_des_tb.vhd /home/giulio/Desktop/DES/8_des_mux.vhd /home/giulio/Desktop/DES/des_cracker.vhd'

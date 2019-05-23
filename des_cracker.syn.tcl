@@ -25,6 +25,7 @@ set nb_w 32
 set nb_k 48
 set nb_ke 56
 set nb_keh 28
+set des_n 11
 
 # DO NOT MODIFY ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING
 
@@ -76,6 +77,7 @@ read_vhdl $src/3_s_box.vhd
 read_vhdl $src/4_k_gen.vhd
 read_vhdl $src/5_f.vhd
 read_vhdl $src/6_des.vhd
+read_vhdl $src/8_des_mux.vhd
 read_vhdl $src/des_cracker.vhd
 puts $design
 ipx::package_project -import_files -root_dir $design -vendor www.telecom-paristech.fr -library DS -force $design
@@ -93,7 +95,7 @@ update_ip_catalog
 create_bd_design $design
 set ip [create_bd_cell -type ip -vlnv [get_ipdefs *www.telecom-paristech.fr:DS:$design:*] $design]
 
-set_property -dict [list CONFIG.NB_DW $nb_dw CONFIG.NB_W $nb_w CONFIG.NB_K $nb_k CONFIG.NB_KE $nb_ke CONFIG.NB_KEH $nb_keh] $ip
+set_property -dict [list CONFIG.NB_DW $nb_dw CONFIG.NB_W $nb_w CONFIG.NB_K $nb_k CONFIG.NB_KE $nb_ke CONFIG.NB_KEH $nb_keh CONFIG.DES_N $des_n] $ip
 set ps7 [create_bd_cell -type ip -vlnv [get_ipdefs *xilinx.com:ip:processing_system7:*] ps7]
 apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" } $ps7
 set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $frequency_mhz] $ps7
