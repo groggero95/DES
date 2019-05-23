@@ -13,7 +13,6 @@ package des_pkg is
 	type s_array is array (1 to 8) of vect_matrix(0 to 3, 0 to 15);
 
 
-
 	constant NB : integer := 32; 
 	constant NDES : integer := 1;
 
@@ -235,6 +234,29 @@ package des_pkg is
 		c	:	out std_ulogic_vector(1 to NB_DW)  -- cyphertext
 	);
 	end component;
+
+	component  des_mux
+	generic (
+				NB_DW  : integer := 64;
+				NB_W   : integer := 32;
+				NB_K   : integer := 48;
+				NB_KE  : integer := 56;
+				NB_KEH : integer := 28;
+				DES_N	: natural := NDES
+		);
+	port(
+		clk			: 	in 	std_ulogic;
+		rst			: 	in  std_ulogic;
+		en			: 	in  std_ulogic;
+		p			: 	in 	std_ulogic_vector(1 to NB_DW);	-- plaintext
+		k_start		: 	in 	std_ulogic_vector(1 to NB_DW);	-- key base
+		c_target	:	in	std_ulogic_vector(1 to NB_DW); 	-- cyphertext
+		k_high		:	out std_ulogic_vector(1 to NB_KE);	-- highest key
+		k_right		:	out std_ulogic_vector(1 to NB_KE);	-- right key when found
+		k_found		:	out std_ulogic;						-- set if key found	
+	);
+	end component;
+
 
 end des_pkg;
 

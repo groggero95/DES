@@ -45,18 +45,20 @@ architecture rtl of des_cracker is
 	signal c_state_a, n_state_a : state_attack;
 	signal c_state_k, n_state_k : state_read_k;
 
-	signal p  	   : std_ulogic_vector(63 downto 0);
-	signal c  	   : std_ulogic_vector(63 downto 0);
-	signal k0 	   : std_ulogic_vector(55 downto 0);
-	signal k  	   : std_ulogic_vector(55 downto 0);
-	signal k1 	   : std_ulogic_vector(55 downto 0);
-	signal k_in    : std_ulogic_vector(55 downto 0);
-	signal k_des   : std_ulogic_vector(63 downto 0);
-	signal c_out   : std_ulogic_vector(63 downto 0);
-	signal des_en  : std_ulogic;
-	signal k_pipe  : ulogic56_array(15 downto 0);
-	signal stall_k : std_ulogic;
-	signal load_k1 : std_ulogic;
+	signal p		: std_ulogic_vector(63 downto 0);
+	signal c		: std_ulogic_vector(63 downto 0);
+	signal k0		: std_ulogic_vector(55 downto 0);
+	signal k		: std_ulogic_vector(55 downto 0);
+	signal k1		: std_ulogic_vector(55 downto 0);
+	signal k_in		: std_ulogic_vector(55 downto 0);
+	signal c_out	: std_ulogic_vector(63 downto 0);
+	signal des_en	: std_ulogic;
+	signal k_pipe	: ulogic56_array(15 downto 0);
+	signal stall_k	: std_ulogic;
+	signal load_k1	: std_ulogic;
+	signal k_high	: std_ulogic_vector(1 to NB_KE);
+	signal k_right	: std_ulogic_vector(1 to NB_KE);
+	signal k_found	: std_ulogic;
 
 	constant OKAY : std_ulogic_vector(1 downto 0) := "00";
 	constant EXOKAY : std_ulogic_vector(1 downto 0) := "01";
@@ -65,11 +67,9 @@ architecture rtl of des_cracker is
 
 begin
 
-	des0 : des  generic map	(NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH)
-				port map 	(clk => aclk, rst => aresetn, en => des_en, p => p, k => k_des, c => c_out);
+	des0 : des_mux  generic map	(NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH, DES_N => DES_N)
+					port map 	(clk => aclk, rst => aresetn, en => des_en, p => p, k_start => k_in, c_target => c, k_high => k_high, k_right => k_right, k_found => k_found);
 
-	-- Append dummy bit to the key instead of the parity, they are not used anyway
-	k_des <= k_in(55 downto 49) & '0' & k_in(48 downto 42) & '0' & k_in(41 downto 35) & '0' & k_in(34 downto 28) & '0' & k_in(27 downto 21) & '0' & k_in(20 downto 14) & '0' & k_in(13 downto 7) & '0' & k_in(6 downto 0) & '0';
 
 	nState : process(aclk)
 	begin
