@@ -4,11 +4,12 @@ use IEEE.numeric_std.all;
 use work.des_pkg.all;
 
 entity des_cracker is
-generic (	NB_DW  : integer := 64;
-			NB_W   : integer := 32;
-			NB_K   : integer := 48;
-			NB_KE  : integer := 56;
-			NB_KEH : integer := 28
+generic (	NB_DW	: integer := 64;
+			NB_W	: integer := 32;
+			NB_K	: integer := 48;
+			NB_KE	: integer := 56;
+			NB_KEH	: integer := 28;
+			DES_N	: integer := NDES
 	);
 port(
 	aclk			: 	in 	std_ulogic;

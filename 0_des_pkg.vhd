@@ -15,6 +15,7 @@ package des_pkg is
 
 
 	constant NB : integer := 32; 
+	constant NDES : integer := 1;
 
 	-- Used to generate subkeys
 	constant PC1 : int_array(1 to 56) :=   (57, 49, 41, 33, 25, 17,  9,

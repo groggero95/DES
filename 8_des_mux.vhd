@@ -16,7 +16,7 @@ port(
 	rst			: 	in  std_ulogic;
 	en			: 	in  std_ulogic;
 	p			: 	in 	std_ulogic_vector(1 to NB_DW);	-- plaintext
-	k			: 	in 	std_ulogic_vector(1 to NB_DW);	-- key base
+	k_start		: 	in 	std_ulogic_vector(1 to NB_DW);	-- key base
 	c_target	:	in	std_ulogic_vector(1 to NB_DW) 	-- cyphertext
 	k_high		:	out std_ulogic_vector(1 to NB_DW);	-- highest key
 	k_right		:	out std_ulogic_vector(1 to NB_DW);	-- right key when found
@@ -27,14 +27,6 @@ end des_mux;
 
 architecture des_mux_arc of des_mux is
 	
-	signal c_final : std_ulogic_vector(1 to NB_DW);
-	signal k_start : std_ulogic_vector(1 to NB_DW);
-	signal lr_n : ulogic64_array(0 to 16);
-	signal lr_pipe : ulogic64_array(0 to 16);
-	signal lr_rev : std_ulogic_vector(1 to NB_DW);
-	signal k_n : ulogic48_array(0 to 15);
-	signal cd_n : ulogic56_array(0 to 16);
-	signal cd_pipe : ulogic56_array(1 to 15);
 	signal k_mux is array 0 to DES_N-1 of std_ulogic_vector(1 downto NB_DW);
 	signal c_mux is array 0 to DES_N-1 of std_ulogic_vector(1 downto NB_DW);
 
@@ -66,7 +58,7 @@ begin
 		end loop;
 	end process;
 
-	-- Assign highest key to output, to store into register
+
 	k_high <= k_mux(DES_N-1);
 
 
