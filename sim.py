@@ -11,6 +11,11 @@ def minimum(a,b):
 	else:
 		return a
 
+def rm_parity(num):
+    n = bin(num)[2:].zfill(64)
+    c = [j for i,j in enumerate(n) if (i+1) % 8 != 0]
+    return int(''.join(c),2)
+
 if len(sys.argv) != 2:
 	print("Error, wrong arguments, format: ./program_name N_test")
 	sys.exit(-1)
@@ -37,6 +42,7 @@ toplevel = 'des'
 # Get the file to compile
 files = [f for f in os.listdir('.') if os.path.isfile(f) and f[-3:] == 'vhd']
 files.sort()
+files = files[:-3]
 
 # Cretae the library and compile all the files
 lib = msim.Library('work',*files, directory=path)
@@ -52,6 +58,7 @@ lr_n = msim.Object(toplevel + '/lr_n',sim)
 cd_n = msim.Object(toplevel + '/cd_n',sim)
 k_n = msim.Object(toplevel + '/k_n',sim)
 c = msim.Object(toplevel + '/c',sim)
+k_c = msim.Object(toplevel + '/k_c',sim)
 
 # Setup the clock
 sim.setclock(clock_period=2)
@@ -99,7 +106,7 @@ for i in range(N):
 			sys.exit(-1)
 
 	if i >= 16:
-		if int(ct_list[-1],16) != c.value:
+		if int(ct_list[-1],16) != c.value or rm_parity(key[-1]) != k_c.value:
 			print("Error after final permuatation cyphertext={} instead of {} for plaintext={} and key={}".format(hex(c.value),ct_list[-1],hex(pt[-1]),hex(key[-1])))
 			sim.quit()
 			sys.exit(-1)
