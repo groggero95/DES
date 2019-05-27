@@ -44,8 +44,8 @@ begin
 	
 	-- Generate DES_N cracker that operates in parallel
 	des_mux_gen : for i in 0 to DES_N-1 generate
-		des_ent: des	generic map (NB_DW, NB_W, NB_K, NB_KE, NB_KEH)
-						port map (clk, rst, en, p, k_mux(i), k_result(i), c_mux(i));
+		des_ent: des	generic map (NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH)
+						port map (clk => clk, rst => rst, en => en, p => p, k => k_mux(i), k_c => k_result(i), c => c_mux(i));
 	end generate des_mux_gen;
 	
 	--Process to check if a key is the right one 

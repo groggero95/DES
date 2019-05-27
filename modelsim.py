@@ -11,6 +11,7 @@ import re
 import subprocess
 import tempfile
 import signal
+import shutil
 
 from collections import namedtuple
 from subprocess import Popen, check_output, STDOUT, DEVNULL
@@ -624,6 +625,8 @@ class Simulator:
 		self.__log.close()
 		os.unlink(os.path.join(self.directory, self.__log_name))
 		os.unlink(os.path.join(self.directory, 'transcript'))
+		shutil.rmtree(self.directory + '/' + '__pycache__')
+		shutil.rmtree(self.directory + '/' + 'work')
 
 	def quit(self):
 		"""
