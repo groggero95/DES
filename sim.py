@@ -32,7 +32,7 @@ cd_correct_list = []
 k_correct_list = []
 
 # Define the path for the working folder
-path='/home/ansel/Desktop/Eurecom/DigitalSystems/DES'
+path= os.getcwd()
 # Set compiler flags
 arg = '-2008'
 compiler = 'vcom'

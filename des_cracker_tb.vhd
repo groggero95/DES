@@ -36,7 +36,7 @@ architecture sim of des_cracker_axi_wrapper_sim is
 	constant axi_resp_slverr: std_ulogic_vector(1 downto 0) := "10";
 	constant axi_resp_decerr: std_ulogic_vector(1 downto 0) := "11";
 
-	constant period:          time := (1.0e3 * 1 ns) / real(frequency_mhz);
+	constant period:          time := ( 1 ns) / real(frequency_mhz);
 	constant startl_max:      natural := start_us + start_us / 10; -- Maximum of start low phase
 	constant starth_max:      natural := 40;       -- Maximum of start high phase
 	constant acknowledge:     natural := 80;       -- Acknowledge phases

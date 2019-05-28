@@ -25,7 +25,7 @@ set nb_w 32
 set nb_k 48
 set nb_ke 56
 set nb_keh 28
-set des_n 11
+set des_n 10
 
 # DO NOT MODIFY ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING
 

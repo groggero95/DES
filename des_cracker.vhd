@@ -51,11 +51,8 @@ architecture rtl of des_cracker is
 	signal k		: std_ulogic_vector(55 downto 0);
 	signal k1		: std_ulogic_vector(55 downto 0);
 	signal k_in		: std_ulogic_vector(55 downto 0);
-	signal c_out	: std_ulogic_vector(63 downto 0);
 	signal des_en	: std_ulogic;
-	signal k_pipe	: ulogic56_array(15 downto 0);
 	signal stall_k	: std_ulogic;
-	signal load_k1	: std_ulogic;
 	signal k_high	: std_ulogic_vector(1 to NB_KE);
 	signal k_right	: std_ulogic_vector(1 to NB_KE);
 	signal k_found	: std_ulogic;
@@ -246,7 +243,7 @@ begin
 	end process ; -- writeOutSync
 
 
-	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr, c_out, c)
+	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr)
 	begin
 		n_state_a <= c_state_a;
 		case (c_state_a) is
@@ -274,13 +271,15 @@ begin
 		irq 	<= '0';
 		des_en 	<= '0';
 		case (c_state_a) is
-			when WAITING =>	if n_state_a = START then
-								des_en <= '1';
-							end if;
+			when WAITING =>	null;
+					--if n_state_a = START then
+					--			des_en <= '1';
+					--		end if;
 
-			when START 	=> 	if not(n_state_a = FOUND or n_state_a = WAITING) then
-								des_en <= '1';
-							end if;
+			when START 	=> 	des_en <= '1';
+							--if not(n_state_a = FOUND or n_state_a = WAITING) then
+							--	des_en <= '1';
+							--end if;
 
 			when FOUND	=> 	irq <= '1';
 
@@ -306,36 +305,15 @@ begin
 	begin
 	  	if (aclk'event and aclk = '1') then
 		  	if (n_state_a = START and c_state_a = WAITING) or aresetn = '0' then
-	  			k_in <= k0;
+	  			k_in <= s0_axi_wdata(23 downto 0) & k0(31 downto 0);
 	  		else
-	    		k_in <= std_ulogic_vector(unsigned(k_in) + 1);
+	    		k_in <= std_ulogic_vector(unsigned(k_in) + DES_N);
 		    end if;
 	    end if;
 	end process counter;
 
 
-	--k_pipe(0) <= k_in;
-
 	led <= k(33 downto 30);
-
-	k_del : process (aclk)
-	begin
-		if (aclk'event and aclk = '1') then
-			if (aresetn = '0' or des_en = '0') then
-				for i in 0 to 15 loop
-					k_pipe(i) <= (others => '0');
-				end loop;
-			else
-				shifter : for i in 0 to 15 loop
-					if i = 0 then
-						k_pipe(i) <= k_in;
-					else
-						k_pipe(i) <= k_pipe(i-1);
-					end if;
-				end loop;
-			end if;
-		end if;
-	end process k_del;
 
 	k_reg : process (aclk)
 	begin
@@ -344,7 +322,7 @@ begin
 				k <= (others => '0');
 			else
 				if stall_k = '0' then
-					k <= k_pipe(15);
+					k <= k_high;
 				end if;
 			end if;
 		end if;
