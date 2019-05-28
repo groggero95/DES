@@ -133,29 +133,29 @@ sim.start()
 
 # Get importante signals to check
 # Read signals
-araddr	= msim.Object(toplevel + '/s0_axi_araddr',sim)	
+araddr	= msim.Object(toplevel + '/s0_axi_araddr',sim)
 arvalid = msim.Object(toplevel + '/s0_axi_arvalid',sim)
 arready = msim.Object(toplevel + '/s0_axi_arready',sim)
-rdata	= msim.Object(toplevel + '/s0_axi_rdata',sim)  
-rresp	= msim.Object(toplevel + '/s0_axi_rresp',sim)   
-rvalid	= msim.Object(toplevel + '/s0_axi_rvalid',sim)  
-rready	= msim.Object(toplevel + '/s0_axi_rready',sim)  
+rdata	= msim.Object(toplevel + '/s0_axi_rdata',sim)
+rresp	= msim.Object(toplevel + '/s0_axi_rresp',sim)
+rvalid	= msim.Object(toplevel + '/s0_axi_rvalid',sim)
+rready	= msim.Object(toplevel + '/s0_axi_rready',sim)
 
 # Write signals
-awaddr	= msim.Object(toplevel + '/s0_axi_awaddr',sim) 
+awaddr	= msim.Object(toplevel + '/s0_axi_awaddr',sim)
 awvalid	= msim.Object(toplevel + '/s0_axi_awvalid',sim)
 awready	= msim.Object(toplevel + '/s0_axi_awready',sim)
-wdata	= msim.Object(toplevel + '/s0_axi_wdata',sim)  
-wstrb	= msim.Object(toplevel + '/s0_axi_wstrb',sim)  
-wvalid	= msim.Object(toplevel + '/s0_axi_wvalid',sim) 
-wready	= msim.Object(toplevel + '/s0_axi_wready',sim) 
-bresp	= msim.Object(toplevel + '/s0_axi_bresp',sim)    
-bvalid	= msim.Object(toplevel + '/s0_axi_bvalid',sim)   
-bready	= msim.Object(toplevel + '/s0_axi_bready',sim) 
+wdata	= msim.Object(toplevel + '/s0_axi_wdata',sim)
+wstrb	= msim.Object(toplevel + '/s0_axi_wstrb',sim)
+wvalid	= msim.Object(toplevel + '/s0_axi_wvalid',sim)
+wready	= msim.Object(toplevel + '/s0_axi_wready',sim)
+bresp	= msim.Object(toplevel + '/s0_axi_bresp',sim)
+bvalid	= msim.Object(toplevel + '/s0_axi_bvalid',sim)
+bready	= msim.Object(toplevel + '/s0_axi_bready',sim)
 
-# The rest  
-irq		= msim.Object(toplevel + '/irq',sim)   
-led		= msim.Object(toplevel + '/led',sim)   
+# The rest
+irq		= msim.Object(toplevel + '/irq',sim)
+led		= msim.Object(toplevel + '/led',sim)
 
 set_zero(sim.find('signals','-in',toplevel))
 
@@ -193,7 +193,7 @@ for i in range(N):
 	stop_time = sim.time
 
 	read(arvalid,araddr,K1_L,arready,rvalid,rready,rresp)
-	k_found = rdata.value 
+	k_found = rdata.value
 	read(arvalid,araddr,K1_H,arready,rvalid,rready,rresp)
 	k_found |= rdata.value << 32
 
