@@ -120,7 +120,8 @@ set_property range 4K [get_bd_addr_segs -of_object [get_bd_intf_pins /ps7/M_AXI_
 validate_bd_design
 save_bd_design
 generate_target all [get_files $design.bd]
-synth_design -top $design
+# -directive AreaOptimized_high
+synth_design -top $design 
 
 # IOs
 foreach io [ array names ios ] {
@@ -137,10 +138,16 @@ set_false_path -from $clock -to [get_ports led[*]]
 # set_false_path -from [get_ports data] -to $clock
 
 # Implementation
+# opt_design -directive ExploreArea
+# place_design -directive ExtraTimingOpt
+# phys_opt_design -directive AggressiveExplore
+# route_design -directive Explore
+
+
 opt_design -directive Explore
-place_design
-phys_opt_design -directive AggressiveExplore
-route_design
+place_design -directive ExtraTimingOpt
+phys_opt_design -directive Explore
+route_design -directive Explore
 write_bitstream $design -force
 
 # Reports

@@ -243,7 +243,7 @@ begin
 	end process ; -- writeOutSync
 
 
-	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr)
+	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr,k_found)
 	begin
 		n_state_a <= c_state_a;
 		case (c_state_a) is
@@ -266,20 +266,14 @@ begin
 
 
 
-	attacklogicOut : process(c_state_a, n_state_a)
+	attacklogicOut : process(c_state_a)
 	begin
 		irq 	<= '0';
 		des_en 	<= '0';
 		case (c_state_a) is
 			when WAITING =>	null;
-					--if n_state_a = START then
-					--			des_en <= '1';
-					--		end if;
 
 			when START 	=> 	des_en <= '1';
-							--if not(n_state_a = FOUND or n_state_a = WAITING) then
-							--	des_en <= '1';
-							--end if;
 
 			when FOUND	=> 	irq <= '1';
 

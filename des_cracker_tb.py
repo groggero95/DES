@@ -18,6 +18,17 @@ K_H = 0x01C
 K1_L = 0x020
 K1_H = 0x024
 
+def dump_signals(path):
+	l = list(map(sim.object,sim.find('signals',path + '/*')))
+	l.sort(key=lambda x: x.name)
+	for s in l:
+		if isinstance(s.value,str):
+			print(s.name,s.value)
+		else:
+			print(s.name,hex(s.value))
+
+def set_des(n):
+	os.system('sed -ri ' + r"'s/(\w+ NDES : \w+ :=) [0-9]+/\1 {}/g'".format(n) + " 0_des_pkg.vhd")
 
 def get_low_h(val,nb):
 	return val & ((1 << nb//2) - 1)
@@ -39,28 +50,23 @@ def setup_axi_request(valid_sig, data_sig, data, done_sig):
 	wait = random.randint(1,8)
 	# Set the delay for the acknowledge of the operation
 	done_sig.force([0,1,0],[0,wait,wait+1])
-
 	# Set the data signal
 	data_sig.force([data],[0])
 	# Scgedule the valid signal high for one clock cycle
-	wdvalid.force([1,0],[0,1])
+	valid_sig.force([1,0],[0,1])
 
 def write_axi(wavalid, wdvalid, waddr, address, wdata, data, wstrb, waack, wdack, wresp, wdone, status):
-
 	# Setup the write address part of transaction from CPU perspective
 	setup_axi_request(wavalid,waddr,address,wdone)
 	# Setup the write data part of transaction from CPU perspective
 	setup_axi_request(wdvalid,wdata,data,wdone)
-
 	# Not used but assign value to strobe communication (In the protocol is used to decide how many bytes are transferred in a sequence)
 	wstrb.force([random.getrandbits(4)],[0])
 	# Advance simulation time
 	sim.run(clk_period)
-
 	# Check for acknowledge from the cracker, it sould be immediate
 	if (waack.value & wdack.value & wresp.value) != 1:
 		print("Error, no acknowledge received from the controller")
-
 	while (wdone.value != 1):
 		sim.run(clk_period)
 		# Check if the two acknowledge have been correctly deasserted, they should last one clock cycle
@@ -68,25 +74,21 @@ def write_axi(wavalid, wdvalid, waddr, address, wdata, data, wstrb, waack, wdack
 			print("Error write address ack with value {} and data ack with value {} are expected to be asserted only 1 ck".format(waack.value,wdack.value))
 		if wresp.value == 0:
 			print("Error, des_cracker did not wait the aknowledge from the CPU, expected 1 for s0_axi_bvalid but got {}".format(wresp.value))
-
 	# End write transaction
 	sim.run(clk_period)
 	# Return the status code of the transaction
+	print("Successfully written data {} at address {}".format(hex(data),hex(address)))
 	return status.value
 
 
-def read_axi(ravalid, raddr, address, raack, rvalid, wdone, status):
-
+def read_axi(ravalid, raddr, address, raack, rvalid, wdone, status,rdata):
 	# Setup the read address part of transaction from CPU perspective
 	setup_axi_request(ravalid,raddr,address,wdone)
-
 	# Advance simulation time
 	sim.run(clk_period)
-
 	# Check for acknowledge from the cracker, it sould be immediate
 	if (raack.value & rvalid.value) != 1:
 		print("Error, no acknowledge received from the controller")
-
 	while (wdone.value != 1):
 		sim.run(clk_period)
 		# Check if the two acknowledge have been correctly deasserted, they should last one clock cycle
@@ -94,17 +96,24 @@ def read_axi(ravalid, raddr, address, raack, rvalid, wdone, status):
 			print("Error read address ack with value {} expected to be asserted only 1 ck".format(raack.value))
 		if rvalid.value == 0:
 			print("Error, des_cracker did not wait the aknowledge from the CPU, expected 1 for s0_axi_rvalid but got {}".format(wresp.value))
-
 	# End read transaction
 	sim.run(clk_period)
+
+	print("Successfully read data {} at address {}".format(hex(rdata.value),hex(address)))
+
 	# Return the status code of the transaction
 	return status.value
 
-if len(sys.argv) != 2:
-	print("Error, wrong arguments, format: ./program_name N_test")
+# Check if the correct argument is passesd
+if len(sys.argv) != 3:
+	print("Error, wrong arguments, format: ./program_name N_test N_des")
 	sys.exit(-1)
 
+
 N = int(sys.argv[1],10)
+n_des = int(sys.argv[2],10)
+
+set_des(n_des)
 
 # Get class to performa a correct encription and setup some empty list needed for the test
 d = des.des()
@@ -121,6 +130,7 @@ toplevel = 'des_cracker'
 # Get the file to compile
 files = [f for f in os.listdir('.') if os.path.isfile(f) and f[-3:] == 'vhd']
 files.sort()
+files = files[:-2]
 
 # Cretae the library and compile all the files
 lib = msim.Library('work',*files, directory=path)
@@ -157,7 +167,7 @@ bready	= msim.Object(toplevel + '/s0_axi_bready',sim)
 irq		= msim.Object(toplevel + '/irq',sim)   
 led		= msim.Object(toplevel + '/led',sim)   
 
-set_zero(sim.find('signals','-in',toplevel))
+set_zero(list(map(sim.object,sim.find('signals','-in',toplevel + '/*'))))
 
 # Setup the clock
 sim.setclock(path='aclk', clock_period=clk_period)
@@ -171,34 +181,37 @@ for i in range(N):
 	key = random.getrandbits(64)
 	pt = random.getrandbits(64)
 	ct = int(d.encrypt(key,pt)[0],16)
-	diff =  random.randint(0,150)
+	diff =  random.randint(0,200)
 	k_start = rm_parity(key) - diff
 
-	n_clock = 16 + diff//n_des + 1.7
+	print("Looking for the key {} with plaintext {} and cyphertext {}.\nThe starting key is {}, the random difference was {}".format(hex(rm_parity(key)),hex(pt),hex(ct),hex(k_start),diff))
+	# n_clock = 16 + diff//n_des + 1.7
 
 	# write plaintext
 	write_axi(awvalid,wvalid,awaddr,P_L,wdata,get_low_h(pt,64),wstrb,awready,wready,bvalid,bready,bresp)
-	write_axi(awvalid,wvalid,awaddr,P_H,wdata,get_high_hs(pt,64),wstrb,awready,wready,bvalid,bready,bresp)
+	write_axi(awvalid,wvalid,awaddr,P_H,wdata,get_high_h(pt,64),wstrb,awready,wready,bvalid,bready,bresp)
 	# write cyphertext
-	write_axi(awvalid,wvalid,awaddr,C_L,wdata,get_high_hs(ct,64),wstrb,awready,wready,bvalid,bready,bresp)
-	write_axi(awvalid,wvalid,awaddr,C_H,wdata,get_high_hs(ct,64),wstrb,awready,wready,bvalid,bready,bresp)
+	write_axi(awvalid,wvalid,awaddr,C_L,wdata,get_low_h(ct,64),wstrb,awready,wready,bvalid,bready,bresp)
+	write_axi(awvalid,wvalid,awaddr,C_H,wdata,get_high_h(ct,64),wstrb,awready,wready,bvalid,bready,bresp)
 	# write start key
-	write_axi(awvalid,wvalid,awaddr,K0_L,wdata,get_high_hs(k_start,64),wstrb,awready,wready,bvalid,bready,bresp)
-	write_axi(awvalid,wvalid,awaddr,K0_H,wdata,get_high_hs(k_start,64),wstrb,awready,wready,bvalid,bready,bresp)
+	write_axi(awvalid,wvalid,awaddr,K0_L,wdata,get_low_h(k_start,64),wstrb,awready,wready,bvalid,bready,bresp)
+	write_axi(awvalid,wvalid,awaddr,K0_H,wdata,get_high_h(k_start,64),wstrb,awready,wready,bvalid,bready,bresp)
 
-	start_time = sim.time
 	while irq.value == 0:
 		sim.run(clk_period)
 
-	stop_time = sim.time
+	# print(dump_signals(toplevel))
 
-	read(arvalid,araddr,K1_L,arready,rvalid,rready,rresp)
+	read_axi(arvalid,araddr,K1_L,arready,rvalid,rready,rresp,rdata)
 	k_found = rdata.value 
-	read(arvalid,araddr,K1_H,arready,rvalid,rready,rresp)
+	read_axi(arvalid,araddr,K1_H,arready,rvalid,rready,rresp,rdata)
 	k_found |= rdata.value << 32
 
 	if (k_found != rm_parity(key)):
 		print("Error, expecting key {} but got instead {}".format(hex(k_start+diff),hex(k_found)))
+	else:
+		print("The attack succeded! Started from key {} and found the key {}".format(hex(k_start),hex(k_found)))
+
 
 
 sim.quit()
