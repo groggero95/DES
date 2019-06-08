@@ -273,7 +273,7 @@ package body des_pkg is
 
 	begin
 		r <= (others => '0');
-		for i in 0 downto 7 loop
+		for i in 0 to 7 loop
 			r(8*i to 8*i+7-1) <= s(7*(8-i)-1 downto 7*(7-i));
 		end loop;
 		return r;
