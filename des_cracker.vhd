@@ -134,29 +134,29 @@ begin
 				s0_axi_rresp <= (others => '0');
 				s0_axi_rdata <= (others => '0');
 			elsif n_state_r = ACKRREQ then
-				case (s0_axi_araddr) is
-					when "000000000000" | "000000000001" | "000000000010" | "000000000011"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= p(31 downto 0);
-					when "000000000100" | "000000000101" | "000000000110" | "000000000111"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= p(63 downto 32);
-					when "000000001000" | "000000001001" | "000000001010" | "000000001011"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= c(31 downto 0);
-					when "000000001100" | "000000001101" | "000000001110" | "000000001111"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= c(63 downto 32);
-					when "000000010000" | "000000010001" | "000000010010" | "000000010011"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= k0(31 downto 0);
-					when "000000010100" | "000000010101" | "000000010110" | "000000010111"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= "00000000" & k0(55 downto 32);
-					when "000000011000" | "000000011001" | "000000011010" | "000000011011"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= k(31 downto 0);
-					when "000000011100" | "000000011101" | "000000011110" | "000000011111"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= "00000000" & k(55 downto 32);
-					when "000000100000" | "000000100001" | "000000100010" | "000000100011"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= k1(31 downto 0);
-					when "000000100100" | "000000100101" | "000000100110" | "000000100111"  =>	s0_axi_rresp <= OKAY;
-																								s0_axi_rdata <= "00000000" & k1(55 downto 32);
-					when others => 	s0_axi_rresp <= DECERR;
-									s0_axi_rdata <= (others => '0');
+				case (s0_axi_araddr(11 downto 2)) is
+					when "0000000000" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= p(31 downto 0);
+					when "0000000001" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= p(63 downto 32);
+					when "0000000010" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= c(31 downto 0);
+					when "0000000011" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= c(63 downto 32);
+					when "0000000100" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= k0(31 downto 0);
+					when "0000000101" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= "00000000" & k0(55 downto 32);
+					when "0000000110" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= k(31 downto 0);
+					when "0000000111" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= "00000000" & k(55 downto 32);
+					when "0000001000" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= k1(31 downto 0);
+					when "0000001001" =>	s0_axi_rresp <= OKAY;
+											s0_axi_rdata <= "00000000" & k1(55 downto 32);
+					when others		  => 	s0_axi_rresp <= DECERR;
+											s0_axi_rdata <= (others => '0');
 				end case;
 			end if;
 		end if;
@@ -217,25 +217,25 @@ begin
 				k0 <= (others => '0');
 			else
 				if n_state_w = ACKRREQ then
-					case (s0_axi_awaddr) is
-						when "000000000000" | "000000000001" | "000000000010" | "000000000011"  =>	s0_axi_bresp <= OKAY;
-																									p(31 downto 0) <= s0_axi_wdata;
-						when "000000000100" | "000000000101" | "000000000110" | "000000000111"  =>	s0_axi_bresp <= OKAY;
-																									p(63 downto 32) <= s0_axi_wdata;
-						when "000000001000" | "000000001001" | "000000001010" | "000000001011"  =>	s0_axi_bresp <= OKAY;
-																									c(31 downto 0) <= s0_axi_wdata;
-						when "000000001100" | "000000001101" | "000000001110" | "000000001111"  =>	s0_axi_bresp <= OKAY;
-																									c(63 downto 32) <= s0_axi_wdata;
-						when "000000010000" | "000000010001" | "000000010010" | "000000010011"  =>	s0_axi_bresp <= OKAY;
-																									k0(31 downto 0) <= s0_axi_wdata;
-						when "000000010100" | "000000010101" | "000000010110" | "000000010111"  =>	s0_axi_bresp <= OKAY;
-																									k0(55 downto 32) <= s0_axi_wdata(23 downto 0);
-						when "000000011000" | "000000011001" | "000000011010" | "000000011011"  |
-							 "000000011100" | "000000011101" | "000000011110" | "000000011111"  |
-							 "000000100000" | "000000100001" | "000000100010" | "000000100011"  |
-							 "000000100100" | "000000100101" | "000000100110" | "000000100111"  =>	s0_axi_bresp <= SLVERR;
+					case (s0_axi_awaddr(11 downto 2)) is
+						when "0000000000"	=>	s0_axi_bresp <= OKAY;
+												p(31 downto 0) <= s0_axi_wdata;
+						when "0000000001"	=>	s0_axi_bresp <= OKAY;
+												p(63 downto 32) <= s0_axi_wdata;
+						when "0000000010"	=>	s0_axi_bresp <= OKAY;
+												c(31 downto 0) <= s0_axi_wdata;
+						when "0000000011"	=>	s0_axi_bresp <= OKAY;
+												c(63 downto 32) <= s0_axi_wdata;
+						when "0000000100"	=>	s0_axi_bresp <= OKAY;
+												k0(31 downto 0) <= s0_axi_wdata;
+						when "0000000101"	=>	s0_axi_bresp <= OKAY;
+												k0(55 downto 32) <= s0_axi_wdata(23 downto 0);
+						when "0000000110" |
+							 "0000000111" |
+							 "0000001000" |
+							 "0000001001"	=>	s0_axi_bresp <= SLVERR;
 
-						when others => 	s0_axi_bresp <= DECERR;
+						when others			=> 	s0_axi_bresp <= DECERR;
 					end case;
 				end if;
 			end if;
