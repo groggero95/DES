@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Set and create folders
-src=$HOME/Desktop/DES
+src=`pwd`
 tmp=/tmp/$USER/DES
 mkdir -p $tmp/syn $tmp/C
 
