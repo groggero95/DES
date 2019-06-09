@@ -10,6 +10,8 @@ package des_pkg is
 	type ulogic56_array is array (integer range <>) of std_ulogic_vector(1 to 56);
 	type ulogic48_array is array (integer range <>) of std_ulogic_vector(1 to 48);
 	type ulogic2_array is array (integer range <>) of std_ulogic_vector(1 to 2);
+	type ulogic32_array is array (integer range <>) of std_ulogic_vector(1 to 32);
+	type ulogic_array is array (integer range <>) of std_ulogic;
 	type s_array is array (1 to 8) of vect_matrix(0 to 3, 0 to 15);
 
 

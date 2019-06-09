@@ -29,11 +29,20 @@ architecture des_mux_arc of des_mux is
 
 	signal k_mux: ulogic64_array(0 to DES_N-1);
 	signal c_mux: ulogic64_array(0 to DES_N-1);
+	signal c_mux_high: ulogic32_array(0 to DES_N-1);
+	signal c_mux_low: ulogic32_array(0 to DES_N-1);
+	signal k_found_high: ulogic_array(0 to DES_N-1);
+	signal k_found_low: ulogic_array(0 to DES_N-1);
 	signal k_result: ulogic56_array(0 to DES_N-1);
+	signal c_target_high: std_ulogic_vector(1 to 32);
+	signal c_target_low: std_ulogic_vector(1 to 32);
 	signal valid : std_ulogic_vector(16 downto 0);
 
 begin
 
+	-- Split the ciphertext
+	c_target_low	<= c_target(1 to 32);
+	c_target_high	<= c_target(33 to 64);
 	-- Generate N_DES k to be passed to the cracker(s)
 	k_proc: process(k_start)
 		variable k_temp : std_ulogic_vector(NB_KE-1 downto 0);
@@ -67,19 +76,50 @@ begin
 		end if;
 	end process en_shr;
 
-	--Process to check if a key is the right one
-	check_found: process(c_mux, c_target, k_result, valid(16))
+	ciph_split: process(c_mux)
+	begin
+		for i in 0 to DES_N-1 loop
+			c_mux_high(i)	<= c_mux(i)(33 to 64);
+			c_mux_low(i)	<= c_mux(i)(1 to 32);
+		end loop;
+	end process;
+
+	--Process to compare higher part of the keys
+	check_high: process(c_mux_high, c_target_high, valid(16))
+	begin
+		for i in 0 to DES_N-1 loop
+			if ((c_mux_high(i) = c_target_high) and valid(16) = '1') then
+				k_found_high(i) <= '1';
+			else
+				k_found_high(i) <= '0';
+			end if;
+		end loop;
+	end process;
+
+	-- Process to compare lower part of the keys
+	check_low: process(c_mux_low, c_target_low, valid(16))
+	begin
+		for i in 0 to DES_N-1 loop
+			if ((c_mux_low(i) = c_target_low) and (valid(16) = '1')) then
+				k_found_low(i) <= '1';
+			else
+				k_found_low(i) <= '0';
+			end if;
+		end loop;
+	end process;
+
+
+	check_end: process(k_found_low, k_found_high, k_result)
 	begin
 		k_found <= '0';
 		k_right <= (others => '0');
 		for i in 0 to DES_N-1 loop
-			if (c_mux(i) = c_target) and valid(16) = '1' then
+			if ((k_found_low(i) = '1') and (k_found_high(i) = '1')) then
 				k_found <= '1';
 				k_right <= k_result(i);
 			end if;
 		end loop;
 	end process;
-
 
 	k_high <= k_result(DES_N-1);
 
