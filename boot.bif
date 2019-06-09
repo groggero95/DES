@@ -1,0 +1,6 @@
+image:
+{
+  [bootloader]/opt/zybo/ds/fsbl.elf
+  des_cracker.bit
+  /opt/zybo/ds/u-boot.elf
+}
