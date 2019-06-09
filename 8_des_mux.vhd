@@ -144,8 +144,6 @@ begin
 		end loop;
 	end process;
 
-
-
 	k_high <= k_result(DES_N-1);
 
 

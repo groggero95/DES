@@ -1,7 +1,7 @@
 #
 # Copyright (C) Telecom ParisTech
 # Copyright (C) Renaud Pacalet (renaud.pacalet@telecom-paristech.fr)
-# 
+#
 # This file must be used under the terms of the CeCILL. This source
 # file is licensed as described in the file COPYING, which you should
 # have received as part of this distribution. The terms are also
@@ -19,7 +19,7 @@ array set ios {
 
 }
 
-set frequency_mhz 180 
+set frequency_mhz 180
 set nb_dw 64
 set nb_w 32
 set nb_k 48
