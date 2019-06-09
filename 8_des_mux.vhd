@@ -42,6 +42,7 @@ architecture des_mux_arc of des_mux is
 	signal k_f_buf_l: ulogic_array(0 to DES_N-1);
 	signal k_f_buf_h: ulogic_array(0 to DES_N-1);
 	signal k_res_buf: ulogic56_array(0 to DES_N-1);
+	signal c_m_buf_low: ulogic32_array(0 to DES_N-1);
 
 
 begin
@@ -102,11 +103,28 @@ begin
 		end loop;
 	end process;
 
+	int_check: process(clk)
+	begin
+		if clk'event and clk = '1' then
+			if rst = '0' then
+				for i in 0 to DES_N-1 loop
+					k_f_buf_h(i)	<= '0';
+					k_res_buf(i)	<= (others => '0');
+					c_m_buf_low(i)  <= (others => '0');
+				end loop;
+			else
+			   	k_f_buf_h	<= k_found_high;
+				k_res_buf	<= k_result;
+				c_m_buf_low	<= c_mux_low;
+			end if;
+		end if;
+	end process;
+
 	-- Process to compare lower part of the keys
-	check_low: process(c_mux_low, c_target_low, valid(16))
+	check_low: process(c_m_buf_low, c_target_low, k_f_buf_h)
 	begin
 		for i in 0 to DES_N-1 loop
-			if ((c_mux_low(i) = c_target_low) and (valid(16) = '1')) then
+			if ((c_m_buf_low(i) = c_target_low) and (k_f_buf_h(i) = '1')) then
 				k_found_low(i) <= '1';
 			else
 				k_found_low(i) <= '0';
@@ -114,30 +132,14 @@ begin
 		end loop;
 	end process;
 
-	int_check: process(clk)
-	begin
-		if clk'event and clk = '1' then
-			if rst = '0' then
-				for i in 0 to DES_N-1 loop
-					k_f_buf_l(i) <= '0';
-					k_f_buf_h(i) <= '0';
-					k_res_buf(i) <= (others => '0');
-				end loop;
-			else
-				k_f_buf_l <= k_found_low;
-			   	k_f_buf_h <= k_found_high;
-				k_res_buf <= k_result;
-			end if;
-		end if;
-	end process;
 
 
-	check_end: process(k_f_buf_l, k_f_buf_h, k_res_buf)
+	check_end: process(k_found_low, k_res_buf)
 	begin
 		k_found <= '0';
 		k_right <= (others => '0');
 		for i in 0 to DES_N-1 loop
-			if ((k_f_buf_h(i) = '1') and (k_f_buf_l(i) = '1')) then
+			if ((k_found_low(i) = '1')) then
 				k_found <= '1';
 				k_right <= k_res_buf(i);
 			end if;
