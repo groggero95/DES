@@ -469,13 +469,13 @@ class Simulator:
 		self.process = self.library.simulate(self.toplevel, *arguments, unit=self.unit,
 											 stdout=self.__log, stderr=stderr)
 
-		with timeout(2):
+		with timeout(5):
 			try:
 				self.posi = open(str(posi_name), 'wb', 0)
 			except TimeoutError as e:
 				raise Exception("Unable to open modelsim with vsim command")
 
-		with timeout(2):
+		with timeout(5):
 			try:
 				self.piso = open(str(piso_name), 'rb')
 			except TimeoutError as e:

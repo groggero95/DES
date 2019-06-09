@@ -144,16 +144,15 @@ set_false_path -from $clock -to [get_ports led[*]]
 # route_design -directive Explore
 
 
-#opt_design -directive Explore
-#place_design -directive ExtraTimingOpt
-#phys_opt_design -directive Explore
-#route_design -directive Explore
-
-opt_design
+opt_design -directive Explore
 place_design -directive ExtraTimingOpt
-phys_opt_design
-route_design
+phys_opt_design -directive Explore
+route_design -directive Explore
 
+#opt_design
+#place_design -directive ExtraTimingOpt
+#phys_opt_design
+#route_design
 
 write_bitstream $design -force
 
