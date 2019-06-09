@@ -19,8 +19,9 @@ array set ios {
 
 }
 
+
 set frequency_mhz 180 
-set nb_dw 64
+et nb_dw 64
 set nb_w 32
 set nb_k 48
 set nb_ke 56
@@ -101,13 +102,13 @@ apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_ex
 set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $frequency_mhz] $ps7
 set_property -dict [list CONFIG.PCW_USE_M_AXI_GP0 {1}] $ps7
 set_property -dict [list CONFIG.PCW_M_AXI_GP0_ENABLE_STATIC_REMAP {1}] $ps7
-set_property -dict [list CONFIG.PCW_IRQ_F2P_INTR {1} ] $ps7
+set_property -dict [list CONFIG.PCW_USE_FABRIC_INTERRUPT {1} CONFIG.PCW_IRQ_F2P_INTR {1} ] $ps7
 
 # Interconnections
 # Primary IOs
 create_bd_port -dir O -type data -from 3 -to 0 led
 connect_bd_net [get_bd_pins /$design/led] [get_bd_ports led]
-# connect_bd_net -net [get_bd_pins $ps7/IRQ_F2P] [get_bd_pins /$design/irq] 
+connect_bd_net [get_bd_pins /$design/irq] [get_bd_pins ps7/IRQ_F2P]
 
 # ps7 - ip
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {Master "/ps7/M_AXI_GP0" Clk "Auto" }  [get_bd_intf_pins /$ip/s0_axi]
@@ -120,7 +121,8 @@ set_property range 4K [get_bd_addr_segs -of_object [get_bd_intf_pins /ps7/M_AXI_
 validate_bd_design
 save_bd_design
 generate_target all [get_files $design.bd]
-# -directive AreaOptimized_high
+make_wrapper -top [get_files $design.bd] -import -force
+write_hwdef -file $design.hwdef -force
 synth_design -top $design 
 
 # IOs
@@ -133,9 +135,7 @@ foreach io [ array names ios ] {
 
 # Clocks and timing
 set clock [get_clocks]
-# set_false_path -from $clock -to [get_ports data]
 set_false_path -from $clock -to [get_ports led[*]]
-# set_false_path -from [get_ports data] -to $clock
 
 # Implementation
 # opt_design -directive ExploreArea
@@ -156,10 +156,12 @@ route_design
 
 
 write_bitstream $design -force
+write_sysdef -bitfile $design.bit -hwdef $design.hwdef $design.sysdef -force
+
 
 # Reports
 puts $design
-report_utilization -file $design.utilization.rpt
+report_utilization -file $design.utilization.rpt -force
 report_timing_summary -file $design.timing.rpt
 
 # Messages
