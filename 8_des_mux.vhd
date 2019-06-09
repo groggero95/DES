@@ -38,6 +38,12 @@ architecture des_mux_arc of des_mux is
 	signal c_target_low: std_ulogic_vector(1 to 32);
 	signal valid : std_ulogic_vector(16 downto 0);
 
+	-- Signals for additional stage
+	signal k_f_buf_l: ulogic_array(0 to DES_N-1);
+	signal k_f_buf_h: ulogic_array(0 to DES_N-1);
+	signal k_res_buf: ulogic56_array(0 to DES_N-1);
+
+
 begin
 
 	-- Split the ciphertext
@@ -56,7 +62,7 @@ begin
 	-- Generate DES_N cracker that operates in parallel
 	des_mux_gen : for i in 0 to DES_N-1 generate
 		des_ent: des	generic map (NB_DW => NB_DW, NB_W => NB_W, NB_K => NB_K, NB_KE => NB_KE, NB_KEH => NB_KEH)
-		port map (clk => clk, rst => rst, en => en, p => p, k => k_mux(i), k_c => k_result(i), c => c_mux(i));
+						port map (clk => clk, rst => rst, en => en, p => p, k => k_mux(i), k_c => k_result(i), c => c_mux(i));
 	end generate des_mux_gen;
 
 	en_shr : process (clk)
@@ -108,18 +114,37 @@ begin
 		end loop;
 	end process;
 
+	int_check: process(clk)
+	begin
+		if clk'event and clk = '1' then
+			if rst = '0' then
+				for i in 0 to DES_N-1 loop
+					k_f_buf_l(i) <= '0';
+					k_f_buf_h(i) <= '0';
+					k_res_buf(i) <= (others => '0');
+				end loop;
+			else
+				k_f_buf_l <= k_found_low;
+			   	k_f_buf_h <= k_found_high;
+				k_res_buf <= k_result;
+			end if;
+		end if;
+	end process;
 
-	check_end: process(k_found_low, k_found_high, k_result)
+
+	check_end: process(k_f_buf_l, k_f_buf_h, k_res_buf)
 	begin
 		k_found <= '0';
 		k_right <= (others => '0');
 		for i in 0 to DES_N-1 loop
-			if ((k_found_low(i) = '1') and (k_found_high(i) = '1')) then
+			if ((k_f_buf_h(i) = '1') and (k_f_buf_l(i) = '1')) then
 				k_found <= '1';
-				k_right <= k_result(i);
+				k_right <= k_res_buf(i);
 			end if;
 		end loop;
 	end process;
+
+
 
 	k_high <= k_result(DES_N-1);
 

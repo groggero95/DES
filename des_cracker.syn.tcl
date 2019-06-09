@@ -19,7 +19,7 @@ array set ios {
 
 }
 
-set frequency_mhz 250
+set frequency_mhz 180 
 set nb_dw 64
 set nb_w 32
 set nb_k 48
@@ -144,10 +144,17 @@ set_false_path -from $clock -to [get_ports led[*]]
 # route_design -directive Explore
 
 
-opt_design -directive Explore
+#opt_design -directive Explore
+#place_design -directive ExtraTimingOpt
+#phys_opt_design -directive Explore
+#route_design -directive Explore
+
+opt_design
 place_design -directive ExtraTimingOpt
-phys_opt_design -directive Explore
-route_design -directive Explore
+phys_opt_design
+route_design
+
+
 write_bitstream $design -force
 
 # Reports
