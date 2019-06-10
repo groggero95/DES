@@ -46,16 +46,42 @@ In this section we will go through all the files that belong to the project, giv
  * [`des_cracker.utilization.rpt`](./des_cracker.utilization.rpt): synthesis area report
 
 ## Design:
-We started from the specifications of the `DES standard` to design the units that were in charge of enciphering.
+We started from the specifications of the `DES standard` to design the units that were in charge of enciphering. Then we proceed going on with the datapath, finally making the FSM for the control unit and wrapping everything around with the `AXI` protocol.
+
+The __datapath__ is basically what is included in the [`8_des_mux.vhd`](./8_des_mux.vhd), i.e. the several instances of the cracker operating in parallel plus a final comparator that looks for a possible match through inspecting the ciphertexts.
+
+![fsm_cu](figures/dp.png)
+
+As can be seen from the picture, several units in parallel work on the same inputs, while their outputs is finally processed. This give us a very high flexibility, as the number `N_DES` of instances present is completely generic.
+
+The __control unit__, on the other hand, does not have a reserved file, but is implemented directly using several processes in the [`des_cracker.vhd`](./des_cracker.vhd). There are three different states for the FSM, that can be seen in the following waveform.
+
+![fsm_cu](figures/fsm_crack.png)
+
+Three states are present:
+* __WAIT__, used to wait for the correct start, given when the higher part of `k0` is written. In this case a transition to the
+* __START__,
+* __FOUND__, final state in which the `irq` gets risen up, which that leads again to the __WAIT__ state
+
+### Goal:
+In our design space, we have to minimize the following ratio:
+
+$T_{clk}/N_{cracker}$
+
+As a matter of fact, we know that every clock cycle we will have `N_cracker` possible ciphers to test, therefore having tried `N_cracker` possible keys. By minimizing that ratio, we will get the best possible compromise between the number of crackers that are working in parallel and the highest possible frequency.
+
 
 ### Pipelining
 At the beginning, we decided to pipeline every stage of the pipe, including the first permutation and the last one. This has been done to sensibly improve the performances.
 As a matter of fact, we do not really care about the __latency__ of our bruteforce attack. Waiting for a couple of tenths of clock cycles is not at all a problem, as we do not have any real time schedule to respect. On the other hand, working on a pipeline allows us to get a better critical path, thus leading to a smaller clock period and higher clock frequency, which leads to an overall better performances with respect to time.
+
 ### Drawbacks
 On the other hand, we are probably increasing the power, as more register are involved to pipeline a more important switching activity will be obtained. This will of course cause more switching power, which is the most relevant contribution.
 For the very same reason, an increase of the area will be observed as well, as we will need more intermediate registers to save the results of the different stages and pipeline them.
+
 ### Considerations
 At the end of the day, we can however consider that the above mentioned defects are not so crucial in the context of our implementation, so we will go on the pipeline idea, keeping in mind what we have mentioned in case we need to improve in some "directions" of our design space.
+
 ### Additional stage
 After many trials, we have observed that the critical path consisted in the comparison of all the obtained ciphers with the correct one. Therefore, we have split the comparison into two subparts, each one of 32 bits. Then, the results of this stage is output for the next one, therefore we check that both the high and low parts are equal in the following clock cycle and eventually we write the correct key and raise the signal to communicate that the result has been found. The algorithm is the following:
 ```
@@ -76,6 +102,10 @@ This of course requires some more registers, but it has allowed us to sensibly i
 
 ## Testing
 For the testing, we have decided to experiment a bit and follow a particular approach.
+
+On a first approximation of this phase, for the layer, we have performed some testing using `ModelSim` in a conventional way, i.e. writing a testbench using a regular `VHDL` file, applying inputs and checking for the outputs.
+
+Once that the validity of the control signals has been checked, we have intensively test using some `Python` scripts, which allow us to handle in an easier way the signals and the possible pattern that we can receive in output. 
 
 
 ## Synthesis
@@ -169,9 +199,3 @@ Then at this point we call a blocking read which will wait for an interrupt to h
    break;
  }
 ```
-
-## Goal:
-We have that the worst case execution time is:
-Therefore, we have to find the optimal ratio
-
-$`T_{clk}/N_{cracker}`$

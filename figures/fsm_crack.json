@@ -1,0 +1,9 @@
+{signal: [
+  {name: 'clk', wave: 'p.....|.....'},
+  {name: 'rst', wave: '01....|.....'},
+  {name: 's0_axi_waddr', wave: 'x==x...|.....', data: ['ko_l', 'k0_h']},
+  {name: 'FSM_c', wave: '3..4...|.53..', data: ['WAIT', 'START', 'FOUND', 'WAIT']},
+  {name: 'FSM_n', wave: '3.4....|53...', data: ['WAIT', 'START', 'FOUND', 'WAIT']},
+  {name: 'k_found', wave: '0......|10...'},
+  {name: 'k1', wave: 'x......|x=...', data:['k_right']},
+]}
