@@ -25,7 +25,7 @@ In this section we will go through all the files that belong to the project, giv
  * [`2_p_box.vhd`](./2_p_box.vhd): an entity that permutes the input accordingly to a constant table previously defined
  * [`3_s_box.vhd`](./3_s_box.vhd): this entity perform the substitution, as defined in the DES standard
  * [`4_k_gen.vhd`](./4_k_gen.vhd): generates the new key for the round, as specified by the standard
- * [`5_f.vhd`](./5_f.vhd):
+ * [`5_f.vhd`](./5_f.vhd): it executes a full round of the DES
  * [`6_des.vhd`](./6_des.vhd): this entity wraps the different stages of the DES enciphering, providing also a division into several stages of a pipeline
  * [`8_des_mux.vhd`](./8_des_mux.vhd): this entity provides an interface to instantiate and handle multiple DES cracker entity in parallel, by distributing the keys to test and finally checking if a correct key has been found to send to the upper layer
  * [`des_cracker.vhd`](./des_cracker.vhd): this is the top level entity, which wraps around and includes the control unit, as well as the `AXI` protocol to communicate with the memory
@@ -56,7 +56,7 @@ On the other hand, we are probably increasing the power, as more register are in
 For the very same reason, an increase of the area will be observed as well, as we will need more intermediate registers to save the results of the different stages and pipeline them.
 ### Considerations
 At the end of the day, we can however consider that the above mentioned defects are not so crucial in the context of our implementation, so we will go on the pipeline idea, keeping in mind what we have mentioned in case we need to improve in some "directions" of our design space.
-## Additional stage
+### Additional stage
 After many trials, we have observed that the critical path consisted in the comparison of all the obtained ciphers with the correct one. Therefore, we have split the comparison into two subparts, each one of 32 bits. Then, the results of this stage is output for the next one, therefore we check that both the high and low parts are equal in the following clock cycle and eventually we write the correct key and raise the signal to communicate that the result has been found. The algorithm is the following:
 ```
 @CC=i
@@ -75,6 +75,7 @@ for i in range(DES_N-1):
 This of course requires some more registers, but it has allowed us to sensibly increase the clock frequency by improving on the critical path.
 
 ## Testing
+For the testing, we have decided to experiment a bit and follow a particular approach.
 
 
 ## Synthesis
@@ -132,6 +133,41 @@ Slack (MET) :             0.048ns  (required time - arrival time)
 | F7 Muxes                   |     0 |     0 |      8800 |  0.00 |
 | F8 Muxes                   |     0 |     0 |      4400 |  0.00 |
 +----------------------------+-------+-------+-----------+-------+
+```
+
+## Driver
+A relatively simple [driver](./des_driver.c) has been developed. It has an extremely simple role. The kernel modules that are already present map to a specific region of the virtual memory the `AXI` registers of our design.
+
+As a consequence, a sort of a file pointer is memory mapped. Then, we enable the interrupts by writing on the above mentioned file pointer.
+```c
+interrupts = 1;
+// Enable interrupts
+if(write(fd, &interrupts, sizeof(interrupts)) < 0) {
+  fprintf(stderr, "Cannot enable interrupts: %s\n", strerror(errno));
+  status = -1;
+  break;
+}
+```
+The acquisition will not however start, as it waits for the writing on the higher part of the `k0` register to begin with:
+```c
+// Plaintext
+regs[0] = 0xd55297ad;
+regs[1] = 0xbec7fa95;
+// Cyphertext
+regs[2] = 0xd1b6fc54;
+regs[3] = 0x0f4b5674;
+// Starting secret key
+regs[4] = 0x9f2d5068; // right one terminates in 168
+regs[5] = 0x009473f4;
+```
+Then at this point we call a blocking read which will wait for an interrupt to happen. In our case, this will occur on the rising edge of the `irq` signal.
+```c
+// Wait for interrupt
+ if(read(fd, &interrupts, sizeof(interrupts)) < 0) {
+   fprintf(stderr, "Cannot read device file: %s\n", strerror(errno));
+   status = -1;
+   break;
+ }
 ```
 
 ## Goal:
