@@ -79,6 +79,7 @@ read_vhdl $src/5_f.vhd
 read_vhdl $src/6_des.vhd
 read_vhdl $src/8_des_mux.vhd
 read_vhdl $src/des_cracker.vhd
+set_property top $design [current_fileset]
 puts $design
 ipx::package_project -import_files -root_dir $design -vendor www.telecom-paristech.fr -library DS -force $design
 puts "No error here"
