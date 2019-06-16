@@ -39,7 +39,7 @@ end des_cracker;
 architecture rtl of des_cracker is
 
 	type state_axi is (IDLE,ACKRREQ,WAITACK);
-	type state_attack is (START,FOUND,WAITING);
+	type state_attack is (START,LOAD,FOUND,WAITING);
 	type state_read_k is (WAIT_LOW,WAIT_HIGH);
 	signal c_state_r, n_state_r, c_state_w, n_state_w : state_axi;
 	signal c_state_a, n_state_a : state_attack;
@@ -133,6 +133,7 @@ begin
 			if aresetn = '0' then
 				s0_axi_rresp <= (others => '0');
 				s0_axi_rdata <= (others => '0');
+				k <= (others => '0');
 			elsif n_state_r = ACKRREQ then
 				case (s0_axi_araddr(11 downto 2)) is
 					when "0000000000" =>	s0_axi_rresp <= OKAY;
@@ -148,7 +149,11 @@ begin
 					when "0000000101" =>	s0_axi_rresp <= OKAY;
 											s0_axi_rdata <= "00000000" & k0(55 downto 32);
 					when "0000000110" =>	s0_axi_rresp <= OKAY;
-											s0_axi_rdata <= k(31 downto 0);
+											s0_axi_rdata <= k_high(1 to 32);
+											--dummyloop : for i in 1 to NB_KE loop
+											--	k(NB_KE-i) <= k_high(i);
+											--end loop;
+											k <= k_high;
 					when "0000000111" =>	s0_axi_rresp <= OKAY;
 											s0_axi_rdata <= "00000000" & k(55 downto 32);
 					when "0000001000" =>	s0_axi_rresp <= OKAY;
@@ -171,11 +176,11 @@ begin
 								n_state_w <= ACKRREQ;
 							end if;
 
-			when ACKRREQ => if s0_axi_bready = '1' then
-								n_state_w <= IDLE;
-							else
+			when ACKRREQ => --if s0_axi_bready = '1' then
+								--n_state_w <= IDLE;
+							--else
 								n_state_w <= WAITACK;
-							end if;
+							--end if;
 
 			when WAITACK => if s0_axi_bready = '1' then
 								n_state_w <= IDLE;
@@ -197,7 +202,7 @@ begin
 			when ACKRREQ 	=>
 							s0_axi_wready 	<= '1';
 							s0_axi_awready 	<= '1';
-							s0_axi_bvalid 	<= '1';
+							--s0_axi_bvalid 	<= '1';
 
 			when WAITACK =>
 							s0_axi_bvalid 	<= '1';
@@ -216,7 +221,7 @@ begin
 				c <= (others => '0');
 				k0 <= (others => '0');
 			else
-				if n_state_w = ACKRREQ then
+				if c_state_w = ACKRREQ then
 					case (s0_axi_awaddr(11 downto 2)) is
 						when "0000000000"	=>	s0_axi_bresp <= OKAY;
 												p(31 downto 0) <= s0_axi_wdata;
@@ -243,15 +248,17 @@ begin
 	end process ; -- writeOutSync
 
 
-	attacklogicIn : process(c_state_a, n_state_w, s0_axi_awaddr,k_found)
+	attacklogicIn : process(c_state_a, c_state_w, s0_axi_awaddr,k_found)
 	begin
 		n_state_a <= c_state_a;
 		case (c_state_a) is
-			when WAITING => if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000101" then
-								n_state_a <= START;
+			when WAITING => if c_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000101" then
+								n_state_a <= LOAD;
 							end if;
 
-			when START => 	if n_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000100" then
+			when LOAD => n_state_a <= START;
+
+			when START => 	if c_state_w = ACKRREQ and s0_axi_awaddr(11 downto 2) = "0000000100" then
 								n_state_a <= WAITING;
 							elsif k_found = '1' then
 								n_state_a <= FOUND;
@@ -272,6 +279,8 @@ begin
 		des_en 	<= '0';
 		case (c_state_a) is
 			when WAITING =>	null;
+
+			when LOAD => null;
 
 			when START 	=> 	des_en <= '1';
 
@@ -295,68 +304,75 @@ begin
 		end if;
 	end process k1_reg;
 
+	--k1 <= k_right;
+
+
 	counter : process(aclk)
 	begin
-	  	if (aclk'event and aclk = '1') then
-		  	if (n_state_a = START and c_state_a = WAITING) or aresetn = '0' then
-	  			k_in <= s0_axi_wdata(23 downto 0) & k0(31 downto 0);
+	  	if rising_edge(aclk) then
+	  		if aresetn = '0' then 
+	  			k_in <= (others => '0');
 	  		else
-	    		k_in <= std_ulogic_vector(unsigned(k_in) + DES_N);
-		    end if;
+	  		 	if c_state_a = LOAD then 
+		    		k_in <= k0;
+		    	else
+		    		k_in <= std_ulogic_vector(unsigned(k_in) + DES_N);
+			    end if;
+		   	end if;
 	    end if;
 	end process counter;
 
 
 	led <= k(33 downto 30);
 
-	k_reg : process (aclk)
-	begin
-		if (aclk'event and aclk = '1') then
-			if (aresetn = '0') then
-				k <= (others => '0');
-			else
-				if stall_k = '0' then
-					k <= k_high;
-				end if;
-			end if;
-		end if;
-	end process k_reg;
+	--k_reg : process (aclk)
+	--begin
+	--	if (aclk'event and aclk = '1') then
+	--		if (aresetn = '0') then
+	--			k <= (others => '0');
+	--		else
+	--			if stall_k = '0' then
+	--				k <= k_high;
+	--			end if;
+	--		end if;
+	--	end if;
+	--end process k_reg;
 
-	readKlogicIn : process(c_state_k, n_state_r, s0_axi_araddr)
-	begin
-		n_state_k <= c_state_k;
-		case (c_state_k) is
-			when WAIT_LOW => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000110" then
-								n_state_k <= WAIT_HIGH;
-							end if;
+	--readKlogicIn : process(c_state_k, n_state_r, s0_axi_araddr)
+	--begin
+	--	n_state_k <= c_state_k;
+	--	case (c_state_k) is
+	--		when WAIT_LOW => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000110" then
+	--							n_state_k <= WAIT_HIGH;
+	--						end if;
 
-			when WAIT_HIGH => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000111" then
-								n_state_k <= WAIT_LOW;
-							end if;
+	--		when WAIT_HIGH => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000111" then
+	--							n_state_k <= WAIT_LOW;
+	--						end if;
 
-			when others =>	null;
-		end case;
+	--		when others =>	null;
+	--	end case;
 
-	end process ; -- readKlogicIn
+	--end process ; -- readKlogicIn
 
 
 
-	readKlogicOut : process(c_state_k,n_state_k)
-	begin
-		stall_k <= '0';
-		case (c_state_k) is
-			when WAIT_LOW =>	if n_state_k = WAIT_HIGH then
-									stall_k <= '1';
-								end if;
+	--readKlogicOut : process(c_state_k,n_state_k)
+	--begin
+	--	stall_k <= '0';
+	--	case (c_state_k) is
+	--		when WAIT_LOW =>	if n_state_k = WAIT_HIGH then
+	--								stall_k <= '1';
+	--							end if;
 
-			when WAIT_HIGH => 	if n_state_k /= WAIT_LOW then
-									stall_k <= '1';
-								end if;
+	--		when WAIT_HIGH => 	if n_state_k /= WAIT_LOW then
+	--								stall_k <= '1';
+	--							end if;
 
-			when others =>	null;
-		end case;
+	--		when others =>	null;
+	--	end case;
 
-	end process ; -- readKlogicOut
+	--end process ; -- readKlogicOut
 
 
 end rtl;

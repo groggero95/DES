@@ -5,6 +5,11 @@ import sys
 import des
 import random
 
+def padhex(m,nb=32):
+	"""Trasform number m into hexadecimal form, spproximating to the next 32 bit chunk.
+	for example padhex(10,15) --> '0x0000000a' while padhex(10,36) --> '0x000000000000000a'"""
+	return '0x' + hex(m)[2:].zfill(int(nb//4))
+
 def set_des(n):
 	os.system('sed -ri ' + r"'s/(\w+ NDES : \w+ :=) [0-9]+/\1 {}/g'".format(n) + " 0_des_pkg.vhd")
 
@@ -81,25 +86,30 @@ for i in range(N):
 	c_target.force([int(d.encrypt(key,pt)[0],16)],[0])
 	diff =  random.randint(0,100)
 	k_start.force([rm_parity(key) - diff],[0])
-	n_clock = 16 + diff//n_des + 1
+	n_clock = 16 + diff//n_des + 2
+	print("Started at key {} random distance from correct key is {}".format(padhex(k_start.value,56),diff))
 	for i in range(n_clock):
 		sim.run(clk_period)
 		k_start.force([k_start.value + n_des],[0])
 		if k_high.value != (k_start.value - (16*n_des + 1)) and i >= 16:
 			print(i, n_des, sim.time)
-			print("Error the expected high key is {} but got {} instead".format(hex(k_start.value),hex(k_high.value)))
+			print("Error the expected high key is {} but got {} instead".format(padhex(k_start.value,56),padhex(k_high.value,56)))
 			sim.quit()
 			sys.exit()
 
-if not k_found.value:
-	print("Error key not found after the expected clock cycles")
-	sim.quit()
-	sys.exit()
 
-if k_right.value != rm_parity(key):
-	print("Found key {} instead of {}".format(hex(k_right.value),hex(key)))
-	sim.quit()
-	sys.exit()
+	if not k_found.value:
+		print("Error key not found after the expected {} clock cycles".format(n_clock))
+		sim.quit()
+		sys.exit()
+
+	if k_right.value != rm_parity(key):
+		print("Found key {} instead of {}".format(padhex(k_right.value,56),padhex(rm_parity(key),56)))
+		sim.quit()
+		sys.exit()
+	else:
+		print("Found key {} in expected {} clock cycles".format(padhex(k_right.value,56),n_clock))
+
 
 
 
