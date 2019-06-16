@@ -56,20 +56,6 @@ architecture sim of des_cracker_axi_wrapper_sim is
 	signal s0_axi_wvalid:   std_ulogic;
 	signal s0_axi_bready:   std_ulogic;
 
-	signal dso:             std_ulogic;
-	signal perr:            std_ulogic;
-	signal cerr:            std_ulogic;
-	signal irq:				std_ulogic;
-	signal val:             std_ulogic_vector(39 downto 0);
-
-	signal check:           boolean;
-	signal last:            std_ulogic;
-	signal last_perr:       std_ulogic;
-	signal last_cerr:       std_ulogic;
-	signal last_val:        std_ulogic_vector(39 downto 0);
-	signal ok:              std_ulogic;
-	signal ok_val:          std_ulogic_vector(39 downto 0);
-
 	signal s0_axi_arready_ref: std_ulogic;
 	signal s0_axi_rdata_ref:   std_ulogic_vector(31 downto 0);
 	signal s0_axi_rresp_ref:   std_ulogic_vector(1 downto 0);
@@ -79,8 +65,8 @@ architecture sim of des_cracker_axi_wrapper_sim is
 	signal s0_axi_bresp_ref:   std_ulogic_vector(1 downto 0);
 	signal s0_axi_bvalid_ref:  std_ulogic;
 
-	signal led_ref:            std_ulogic_vector(3 downto 0);
-
+	signal irq : std_ulogic;
+	
 begin
 
 	process
@@ -179,68 +165,6 @@ begin
 		end loop;
 	end process;
 
-	-- Termination after nmax acquisitions, check periodicity of acquisitions,
-	-- error if no acquisition in twice the warm-up time plus maximum
-	-- acquisition time
-	--process
-	--	variable l:     line;
-	--	constant nmax:  positive := 100;
-	--begin
-	--	wait until rising_edge(aclk) and aresetn = '0';
-	--	wait until rising_edge(aclk) and aresetn = '1';
-	--	for n in 1 to nmax loop
-	--		wait until dso = '1' and rising_edge(aclk) for (acquisition_max + warm_us) * 2 us;
-	--		if dso /= '1' then
-	--			write(l, string'("NON REGRESSION TEST FAILED - "));
-	--			write(l, now);
-	--			writeline(output, l);
-	--			write(l, string'("  NO ACQUISITION IN "));
-	--			write(l, (acquisition_max + warm_us) * 2 us);
-	--			writeline(output, l);
-	--			finish;
-	--		end if;
-	--		wait until dso = '0' and rising_edge(aclk);
-	--	end loop;
-	--	write(l, string'("NON REGRESSION TEST PASSED - "));
-	--	write(l, now);
-	--	writeline(output, l);
-	--	finish;
-	--end process;
-
-	-- Compute reference values and check flag. Actual and reference values are
-	-- compared only when check flag is true. Check flag is false until reset
-	-- is asserted low and during 10 us after the DHT11 emulator outputs
-	-- reference values.
-	--process
-	--begin
-	--	check     <= false;
-	--       wait until rising_edge(aclk) and aresetn = '0';
-	--	check     <= true;
-	--       last      <= '0';
-	--       last_perr <= '0';
-	--       last_cerr <= '0';
-	--       last_val  <= (others => '0');
-	--       ok        <= '0';
-	--       ok_val    <= (others => '0');
-	--       loop
-	--           wait until rising_edge(aclk) and dso = '1';
-	--           check <= false;
-	--           wait for 10 us;
-	--           wait until rising_edge(aclk);
-	--           check     <= true;
-	--           last      <= '1';
-	--           last_perr <= perr;
-	--           last_cerr <= cerr;
-	--           last_val  <= val;
-	--           if perr = '0' and cerr = '0' then
-	--               ok      <= '1';
-	--               ok_val  <= val;
-	--           end if;
-	--           wait until rising_edge(aclk) and dso = '0';
-	--       end loop;
-	--   end process;
-
-	--led_ref <= (others => '-') when not check else ok & last & last_perr & last_cerr;
 
 	-- Check unknowns
 	process
@@ -361,10 +285,6 @@ begin
 		end loop;
 	end process;
 
---postponed process(led, led_ref)
---begin
---	check_ref(v => led, r => led_ref, s => "led");
---end process;
 
 end architecture sim;
 

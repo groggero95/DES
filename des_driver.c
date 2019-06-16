@@ -17,18 +17,22 @@
 #define DES_BASE     0x40000000
 
 int main(int argc, char **argv) {
-	printf("Entered in main\n");
 	int status = 0; // return status
 	int fd;         // file descriptor for device file
+
 	// the interface registers of the hardware peripheral, memory-mapped in
 	// virtual address space
+	// Use volatile keyword to prvent assumption on its value
 	volatile uint32_t *regs;
 
-	uint32_t p_l = 0xd55297ad, p_h = 0xbec7fa95;
-	// int p_l = 0xd55297ad, p_h = 0xbec7fa95;
-	// int p_l = 0xd55297ad, p_h = 0xbec7fa95;
+	uint32_t interrupts; // interrupts counter
 
-	printf("Variable def\n");
+
+	uint32_t p_l, p_h;
+	uint32_t c_l , c_h;
+	uint32_t k0_l, k0_h;
+	char exit = '1';
+
 
 	// Open device
 	fd = open(DES_DEVICE, O_RDWR);
@@ -37,44 +41,51 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	printf("Open device\n");
-
-	// Map device file in memory, read-only, shared with other processes mapping
-	// the same memory region
+	// Map device file in memory, read-write, shared with other processes mapping in the same memory region
 	regs = mmap((void*)DES_BASE, DES_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (regs == MAP_FAILED) {
 		fprintf(stderr, "Mapping error: %s\n", strerror(errno));
-		close(fd);
 		return -1;
 	}
 
-	printf("Map memory\n");
+	for (int i = 0; i < 10; ++i, printf("*"));
+	printf("DES_CRACKER");
+	for (int i = 0; i < 10; ++i, printf("*"));
+	printf("\n");
+	printf("* This program allows you to interface with a custom pheripheral			*\n");
+	printf("* built in VHDL and embedded in the FPGA portion of this developer			*\n");
+	printf("* board. This ip performs a brute force attack on the DES chypher			*\n");
+	printf("* and some information are necessary to initiate the attack:				*\n");
+	printf("* 	-- Plaintext:															*\n");
+	printf("* 	-- Cyphertext:															*\n");
+	printf("* 	-- Starting key:														*\n");
+	printf("* Note that not all (plaintext,cyphertext) touple may have a solution		*\n");
+	printf("* thus carefull considerations need to be made before starting the attack,	*\n");
+	printf("* in such a way you will not wait forever. In any case be pre[ared to wait 	*\n");
+	printf("* for a while, the zybo can only contain a few DES encriptor.				*\n");
+	for (int i = 0; i < 30; ++i, printf("*"));
 
-	// Infinite loop waiting for interrupts
-	while (1) {
-		uint32_t interrupts; // interrupts counter
+	printf("\nThe keyword 'q' can be used to exit the program whenever an input is requested\n");
 
-		printf("In while\n");
+
+	// Infinite loop for command line interface
+	while (exit) {
+
+		printf("Please enter the plaintext:\n");
+	
+		printf("Please enter the cyphertext:\n");
+	
+		printf("Please enter the starting key:\n");
 
 		// Enable interrupts
 		interrupts = 1;
-		printf("Past interrupt\n");
 		// Enable interrupts
 		if (write(fd, &interrupts, sizeof(interrupts)) < 0) {
 			fprintf(stderr, "Cannot enable interrupts: %s\n", strerror(errno));
 			status = -1;
 			break;
 		}
-		printf("Past interrupt check\n");
 
-
-		// Here we will write on our registers
-		// Plaintext
-		printf("Write reg\n");
-
-		//  memcpy((void*)regs, (const void *) &p_l, 64);
-		// printf("Print per giulio\n");
-		//  memcpy((void*) regs+1, (const void *) &p_h,4);
 
 		regs[0] = 0xd55297ad;
 		regs[1] = 0xbec7fa95;
@@ -91,12 +102,10 @@ int main(int argc, char **argv) {
 		fflush(stdout);
 
 		// Starting secret key
-		regs[4] = 0x9f2d5068; // right one terminates in 168
-		regs[5] = 0x009473f4;
-		fflush(stdout);
-		printf("K strat writtent\n");
-		fflush(stdout);
-
+		regs[4] = 0x9f2d4068; // right one terminates in 5168
+		printf("k0 low written %x\n", regs[4]);
+		regs[5] = 0x009473f3; // supposeed to end in 3
+		printf("k0 low written %x\n", regs[5]);
 
 		// Wait for interrupt
 		if (read(fd, &interrupts, sizeof(interrupts)) < 0) {
@@ -108,8 +117,8 @@ int main(int argc, char **argv) {
 		printf("Received %u interrupts\n", interrupts);
 
 		// Read and display content of interface registers
-		printf("Register 0: 0x%08x\n", regs[9]);
-		printf("Register 1: 0x%08x\n", regs[10]);
+		printf("Register 0: 0x%08x\n", regs[8]);
+		printf("Register 1: 0x%08x\n", regs[9]);
 	}
 
 	// Unmap
