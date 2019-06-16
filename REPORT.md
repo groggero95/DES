@@ -59,8 +59,8 @@ The __control unit__, on the other hand, does not have a reserved file, but is i
 ![fsm_cu](figures/fsm_crack.png)
 
 Three states are present:
-* __WAIT__, used to wait for the correct start, given when the higher part of `k0` is written. In this case a transition to the
-* __START__,
+* __WAIT__, used to wait for the correct start, given when the higher part of `k0` is written. In this case a transition to the __LOAD__ state is performed, to prepare the attack.
+* __START__, in this state the attack is fully running. If, by any chance, a write access to the `k0` register happens, the acquisition is stopped and the FSM goes back to __WAIT__ state
 * __FOUND__, final state in which the `irq` gets risen up, which that leads again to the __WAIT__ state
 
 ### Goal:
@@ -105,8 +105,11 @@ For the testing, we have decided to experiment a bit and follow a particular app
 
 On a first approximation of this phase, for the layer, we have performed some testing using `ModelSim` in a conventional way, i.e. writing a testbench using a regular `VHDL` file, applying inputs and checking for the outputs.
 
-Once that the validity of the control signals has been checked, we have intensively test using some `Python` scripts, which allow us to handle in an easier way the signals and the possible pattern that we can receive in output. 
+Once that the validity of the control signals has been checked, we have intensively test using some `Python` scripts, which allow us to handle in an easier way the signals and the possible pattern that we can receive in output.
 
+After several trials, we think we have obtained a design which successfully works in the "normal" operating conditions. Of course, we have tried to test for several corner cases, in order to observe possible misbehavior. We had in some occasions to correct our design to fully respect the protocol.
+
+However, it is known that testing can not be performed for all the possible input data pattern. Nevertheless, it is however possible that some conditions are not handled correctly.
 
 ## Synthesis
 We have run a synthesis script which instantiates 10 different design crackers at once. This implies that at the same time we are testing 10 different keys, therefore improving a lot with respect to a single one.
