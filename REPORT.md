@@ -1,7 +1,12 @@
+# Project report: DES CRACKER
+
+The report and all source files can be found in the `Alberto.Anselmo` and `Giulio.Roggero` branches.
+
 ## Team members:
 
-* Alberto   Anselmo,  [Alberto.Anselmo@eurecom.fr](mailto:Alberto.Anselmo@eurecom.fr)
-* Giulio    Roggero,  [Giulio.Roggero@eurecom.fr](mailto:Giulio.Roggero@eurecom.fr)
+* ANSELMO, Alberto: [Alberto.Anselmo@eurecom.fr](mailto:Alberto.Anselmo@eurecom.fr)
+
+* ROGGERO, Giulio: [Giulio.Roggero@eurecom.fr](mailto:Giulio.Roggero@eurecom.fr)
 
 The following report regards a DES bruteforce cracker that has been designed during the __Digital Systems, Hardware - Software Integration__ (AY 2018-19).
 
@@ -100,12 +105,15 @@ for i in range(DES_N-1):
 ```
 This of course requires some more registers, but it has allowed us to sensibly increase the clock frequency by improving on the critical path.
 
+### Other possible improvements
+It is worth mentioning that we could have also decided to apply the inverse of the final permutation to the target ciphertext. We could have then compared the part related to `L16`, i.e. the right one which is already stored in a register in the same clock cycle where the `R16` is computed. Then, we could have matched this part with the corresponding of the permuted cipher. This could have allowed us to spare some registers and eventually give us the chance to add one cracker, but this idea came eventually too late to implement (and test) it.
+
 ## Testing
 For the testing, we have decided to experiment a bit and follow a particular approach.
 
 On a first approximation of this phase, for the layer, we have performed some testing using `ModelSim` in a conventional way, i.e. writing a testbench using a regular `VHDL` file, applying inputs and checking for the outputs.
 
-Once that the validity of the control signals has been checked, we have intensively test using some `Python` scripts, which allow us to handle in an easier way the signals and the possible pattern that we can receive in output.
+Once that the validity of the control signals has been checked, we have intensively test using some `Python` scripts, which allow us to handle in an easier way the signals and the possible pattern that we can receive in output. It is relevant to note that `ModelSim` has to be included in the `PATH`, since commands are needed to be used.
 
 After several trials, we think we have obtained a design which successfully works in the "normal" operating conditions. Of course, we have tried to test for several corner cases, in order to observe possible misbehavior. We had in some occasions to correct our design to fully respect the protocol.
 
@@ -123,7 +131,7 @@ route_design -directive Explore
 With respect to the scripts used before during lectures, those options allows the synthesizer to run some more trials to better optimize the obtained result. Since the algorithms used are of course not of the "exact" type, but "heuristic" ones, it is more likely that better results are obtained, giving more possibilities to the software in charge of the physical floorplanning.
 
 As mentioned in the [description](#description), the two generated reports are included. We can focus on some parts we consider to be relevant:
-* as in can be seen in the [timing report](./des_cracker.timing.rpt), a clock having a frequency of `187.512 MHz` will still meet the timing constraint. Additionally, the critical path for the setup regards some control units signal, so we decided to stop with the improvements also on the signals which might violate the hold time, since it is very unlikely that there is sufficient margin to increase more the frequency.
+* as in can be seen in the [timing report](./des_cracker.timing.rpt), a clock having a frequency of `200 MHz` will still meet the timing constraint. Additionally, the critical path for the setup regards some control units signal, so we decided to stop with the improvements also on the signals which might violate the hold time, since it is very unlikely that there is sufficient margin to increase more the frequency.
 
 ```
 Clock       Waveform(ns)         Period(ns)      Frequency(MHz)
