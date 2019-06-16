@@ -128,6 +128,7 @@ begin
 	end process ; -- readlogicOut
 
 	readOutSync : process( aclk )
+		variable k_read : std_ulogic_vector(1 downto 0) := "00";
 	begin
 		if aclk'event and aclk = '1' then
 			if aresetn = '0' then
@@ -149,13 +150,29 @@ begin
 					when "0000000101" =>	s0_axi_rresp <= OKAY;
 											s0_axi_rdata <= "00000000" & k0(55 downto 32);
 					when "0000000110" =>	s0_axi_rresp <= OKAY;
-											s0_axi_rdata <= k_high(1 to 32);
-											--dummyloop : for i in 1 to NB_KE loop
-											--	k(NB_KE-i) <= k_high(i);
-											--end loop;
-											k <= k_high;
+											if k_read = "00" then 
+												s0_axi_rdata <= k_high(25 to NB_KE);
+												k <= k_high;
+												k_read := "01";
+											elsif (k_read = "01") then
+												s0_axi_rdata <= k(31 downto 0);
+											else
+												s0_axi_rdata <= k(31 downto 0);
+												k_read := "00";
+											end if;
+
 					when "0000000111" =>	s0_axi_rresp <= OKAY;
-											s0_axi_rdata <= "00000000" & k(55 downto 32);
+											if k_read = "00" then 
+												s0_axi_rdata <= "00000000" & k_high(1 to 24);
+												k <= k_high;
+												k_read := "10";
+											elsif (k_read = "10") then
+												s0_axi_rdata <= "00000000" & k(55 downto 32);
+											else
+												s0_axi_rdata <= "00000000" & k(55 downto 32);
+												k_read := "00";
+											end if;
+
 					when "0000001000" =>	s0_axi_rresp <= OKAY;
 											s0_axi_rdata <= k1(31 downto 0);
 					when "0000001001" =>	s0_axi_rresp <= OKAY;
@@ -176,11 +193,7 @@ begin
 								n_state_w <= ACKRREQ;
 							end if;
 
-			when ACKRREQ => --if s0_axi_bready = '1' then
-								--n_state_w <= IDLE;
-							--else
-								n_state_w <= WAITACK;
-							--end if;
+			when ACKRREQ => n_state_w <= WAITACK;
 
 			when WAITACK => if s0_axi_bready = '1' then
 								n_state_w <= IDLE;
@@ -202,7 +215,6 @@ begin
 			when ACKRREQ 	=>
 							s0_axi_wready 	<= '1';
 							s0_axi_awready 	<= '1';
-							--s0_axi_bvalid 	<= '1';
 
 			when WAITACK =>
 							s0_axi_bvalid 	<= '1';
@@ -324,55 +336,5 @@ begin
 
 
 	led <= k(33 downto 30);
-
-	--k_reg : process (aclk)
-	--begin
-	--	if (aclk'event and aclk = '1') then
-	--		if (aresetn = '0') then
-	--			k <= (others => '0');
-	--		else
-	--			if stall_k = '0' then
-	--				k <= k_high;
-	--			end if;
-	--		end if;
-	--	end if;
-	--end process k_reg;
-
-	--readKlogicIn : process(c_state_k, n_state_r, s0_axi_araddr)
-	--begin
-	--	n_state_k <= c_state_k;
-	--	case (c_state_k) is
-	--		when WAIT_LOW => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000110" then
-	--							n_state_k <= WAIT_HIGH;
-	--						end if;
-
-	--		when WAIT_HIGH => if n_state_r = ACKRREQ and s0_axi_araddr(11 downto 2) = "0000000111" then
-	--							n_state_k <= WAIT_LOW;
-	--						end if;
-
-	--		when others =>	null;
-	--	end case;
-
-	--end process ; -- readKlogicIn
-
-
-
-	--readKlogicOut : process(c_state_k,n_state_k)
-	--begin
-	--	stall_k <= '0';
-	--	case (c_state_k) is
-	--		when WAIT_LOW =>	if n_state_k = WAIT_HIGH then
-	--								stall_k <= '1';
-	--							end if;
-
-	--		when WAIT_HIGH => 	if n_state_k /= WAIT_LOW then
-	--								stall_k <= '1';
-	--							end if;
-
-	--		when others =>	null;
-	--	end case;
-
-	--end process ; -- readKlogicOut
-
 
 end rtl;
