@@ -24,8 +24,10 @@ def dump_signals(path):
 	for s in l:
 		if isinstance(s.value,str):
 			print(s.name,s.value)
-		else:
+		elif isinstance(s.value,int):
 			print(s.name,hex(s.value))
+		elif isinstance(s.value,list):
+			print(s.name,list(map(hex,s.value)))
 
 def set_des(n):
 	os.system('sed -ri ' + r"'s/(\w+ NDES : \w+ :=) [0-9]+/\1 {}/g'".format(n) + " 0_des_pkg.vhd")
@@ -47,13 +49,13 @@ def set_zero(signals):
 
 def setup_axi_request(valid_sig, data_sig, data, done_sig):
 	# Define a random time for the acknowledge of the whole operation
-	wait = random.randint(1,8)
+	wait = random.randint(2,8)
 	# Set the delay for the acknowledge of the operation
-	done_sig.force([0,1,0],[0,wait,wait+1])
+	done_sig.force([0,1],[0,wait])
 	# Set the data signal
 	data_sig.force([data],[0])
-	# Scgedule the valid signal high for one clock cycle
-	valid_sig.force([1,0],[0,1])
+	# Scgedule the valid signal high for two clock cycle
+	valid_sig.force([1,0],[0,2])
 
 def write_axi(wavalid, wdvalid, waddr, address, wdata, data, wstrb, waack, wdack, wresp, wdone, status):
 	# Setup the write address part of transaction from CPU perspective
@@ -62,20 +64,31 @@ def write_axi(wavalid, wdvalid, waddr, address, wdata, data, wstrb, waack, wdack
 	setup_axi_request(wdvalid,wdata,data,wdone)
 	# Not used but assign value to strobe communication (In the protocol is used to decide how many bytes are transferred in a sequence)
 	wstrb.force([random.getrandbits(4)],[0])
+	# dump_signals('des_cracker')
 	# Advance simulation time
 	sim.run(clk_period)
+	# dump_signals('des_cracker')
 	# Check for acknowledge from the cracker, it sould be immediate
-	if (waack.value & wdack.value & wresp.value) != 1:
+	if (waack.value & wdack.value) != 1:
 		print("Error, no acknowledge received from the controller")
 	while (wdone.value != 1):
+		# dump_signals('des_cracker')
 		sim.run(clk_period)
 		# Check if the two acknowledge have been correctly deasserted, they should last one clock cycle
 		if (waack.value == 1 or wdack.value == 1):
 			print("Error write address ack with value {} and data ack with value {} are expected to be asserted only 1 ck".format(waack.value,wdack.value))
 		if wresp.value == 0:
-			print("Error, des_cracker did not wait the aknowledge from the CPU, expected 1 for s0_axi_bvalid but got {}".format(wresp.value))
+			print("Error, des_cracker did not wait the aknowledge from the CPU, expected 1 for s0_axi_bready but got {}".format(wresp.value))
 	# End write transaction
+	# dump_signals('des_cracker')
 	sim.run(clk_period)
+	if wdone.value & wresp.value == 1:
+		sim.run(clk_period)
+
+	wdone.force([0],[0])
+	# dump_signals('des_cracker')
+	if wresp.value != 0:
+		print("Error, des_cracker did not deasserted acknowledge to CPU, expected 0 for s0_axi_bready but got {}".format(wresp.value))
 	# Return the status code of the transaction
 	print("Successfully written data {} at address {}".format(hex(data),hex(address)))
 	return status.value
@@ -98,9 +111,8 @@ def read_axi(ravalid, raddr, address, raack, rvalid, wdone, status,rdata):
 			print("Error, des_cracker did not wait the aknowledge from the CPU, expected 1 for s0_axi_rvalid but got {}".format(wresp.value))
 	# End read transaction
 	sim.run(clk_period)
-
+	wdone.force([0],[0])
 	print("Successfully read data {} at address {}".format(hex(rdata.value),hex(address)))
-
 	# Return the status code of the transaction
 	return status.value
 
@@ -141,7 +153,7 @@ lib.compile(compiler,arg)
 sim = msim.Simulator(lib,toplevel)
 sim.start()
 
-# Get importante signals to check
+# Get important signals to check
 # Read signals
 araddr	= msim.Object(toplevel + '/s0_axi_araddr',sim)
 arvalid = msim.Object(toplevel + '/s0_axi_arvalid',sim)
