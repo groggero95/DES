@@ -160,9 +160,9 @@ int main(int argc, char **argv) {
 		fflush(stdout);
 
 		// Starting secret key
-		regs[4] = strtoul(k0_l, NULL, 16); // right one terminates in 5168
+		regs[4] = strtoul(k0_l, NULL, 16);
 		printf("k0 low written %x\n", regs[4]);
-		regs[5] = strtoul(k0_h, NULL, 16); // supposeed to end in 3
+		regs[5] = strtoul(k0_h, NULL, 16);
 		printf("k0 low written %x\n", regs[5]);
 
 		// Wait for interrupt

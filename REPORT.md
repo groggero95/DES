@@ -62,7 +62,7 @@ In this section we will go through all the files that belong to the project, giv
  * [`modelsim.py`](./modelsim.py): declaration of classes and methods used to interface __ModelSim__ with Python, using a series of FIFO to communicate
 
  * [`sim.py`](./sim.py): a simulation of all the rounds of the DES, single entity
- 
+
 * Other files:
 
  * [`des_cracker.syn.tcl`](./des_cracker.syn.tcl): synthesis script, with some modifications to explore more aggressively the timing optimizations
@@ -158,30 +158,20 @@ With respect to the scripts used before during lectures, those options allows th
 
 As mentioned in the [description](#description), the two generated reports are included. We can focus on some parts we consider to be relevant:
 
-* as in can be seen in the [timing report](./des_cracker.timing.rpt), a clock having a frequency of `200 MHz` will still meet the timing constraint. Additionally, the critical path for the setup regards some control units signal, so we decided to stop with the improvements also on the signals which might violate the hold time, since it is very unlikely that there is sufficient margin to increase more the frequency.
+* as in can be seen in the [timing report](./des_cracker.timing.rpt), a clock having a frequency of `200 MHz` will still meet the timing constraint. Additionally, the critical path for the setup regards some control units signal, so we decided to stop with the improvements also on the signals which might violate the hold time, since it is very unlikely that there is sufficient margin to increase more the frequency. From further investigations, it is possible to notice that the `AXI` controller is involved in the critical path, which gives us poor space to provide efficient optimizations. We were therefore satisfied with the achieved results.
 
 ```
 Clock       Waveform(ns)         Period(ns)      Frequency(MHz)
 -----       ------------         ----------      --------------
-clk_fpga_0  {0.000 2.667}        5.333           187.512         
+clk_fpga_0  {0.000 2.500}        5.000           200.000                
 
 From Clock:  clk_fpga_0
   To Clock:  clk_fpga_0
 
-Setup :            0  Failing Endpoints,  Worst Slack        0.048ns,  Total Violation        0.000ns
-Hold  :            0  Failing Endpoints,  Worst Slack        0.020ns,  Total Violation        0.000ns
-PW    :            0  Failing Endpoints,  Worst Slack        1.686ns,  Total Violation        0.000ns
+Setup :            0  Failing Endpoints,  Worst Slack        0.102ns,  Total Violation        0.000ns
+Hold  :            0  Failing Endpoints,  Worst Slack        0.015ns,  Total Violation        0.000ns
+PW    :            0  Failing Endpoints,  Worst Slack        1.520ns,  Total Violation        0.000ns
 ---------------------------------------------------------------------------------------------------
-
-
-Max Delay Paths
---------------------------------------------------------------------------------------
-Slack (MET) :             0.048ns  (required time - arrival time)
-  Source:                 ps7_axi_periph/s00_couplers/auto_pc/inst/gen_axilite.gen_b2s_conv.axilite_b2s/SI_REG/aw.aw_pipe/m_payload_i_reg[39]/C
-                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.667ns period=5.333ns})
-  Destination:            des_cracker/U0/FSM_onehot_c_state_a_reg[1]_replica_51/D
-                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.667ns period=5.333ns})
-
 ```
 
 * the total slice that are used are reported in the [utilization report](./des_cracker.utilization.rpt). As one may see, there is probably some more space to instantiate an additional cracker, leading to 11 in total, but this will probably bring to a too high occupation of the floorplan. This might cause problems especially to clock distribution, so we decided to keep the number of `DES` instances to 10, in order to have some margin for the synthesizer to work. In addition, it is possible to see how no latches are (wrongly) present in our design. On the other hand, even if our design uses some muxltiplexers, their sizes are not enough to justify the usage of the onboard muxes. Therefore, their functions are mapped to the regular LUTs.
@@ -190,13 +180,13 @@ Slack (MET) :             0.048ns  (required time - arrival time)
 +----------------------------+-------+-------+-----------+-------+
 |          Site Type         |  Used | Fixed | Available | Util% |
 +----------------------------+-------+-------+-----------+-------+
-| Slice LUTs                 | 15618 |     0 |     17600 | 88.74 |
-|   LUT as Logic             | 15566 |     0 |     17600 | 88.44 |
+| Slice LUTs                 | 15653 |     0 |     17600 | 88.94 |
+|   LUT as Logic             | 15601 |     0 |     17600 | 88.64 |
 |   LUT as Memory            |    52 |     0 |      6000 |  0.87 |
 |     LUT as Distributed RAM |     0 |     0 |           |       |
 |     LUT as Shift Register  |    52 |     0 |           |       |
-| Slice Registers            | 20871 |     0 |     35200 | 59.29 |
-|   Register as Flip Flop    | 20871 |     0 |     35200 | 59.29 |
+| Slice Registers            | 20809 |     0 |     35200 | 59.12 |
+|   Register as Flip Flop    | 20809 |     0 |     35200 | 59.12 |
 |   Register as Latch        |     0 |     0 |     35200 |  0.00 |
 | F7 Muxes                   |     0 |     0 |      8800 |  0.00 |
 | F8 Muxes                   |     0 |     0 |      4400 |  0.00 |
@@ -207,6 +197,62 @@ Slack (MET) :             0.048ns  (required time - arrival time)
 A relatively simple [driver](./des_driver.c) has been developed. It has an extremely simple role. The kernel modules that are already present map to a specific region of the virtual memory the `AXI` registers of our design.
 
 As a consequence, a sort of a file pointer is memory mapped. Then, we enable the interrupts by writing on the above mentioned file pointer.
+
+The user is required to enter the values needed, or alternatively the char `q` to quit.
+```c
+printf("Please enter the plaintext:\n");
+scanf("%s", p_all);
+if(strncmp(p_all, "q", 1) == 0){
+	break;
+}
+printf("Please enter the cyphertext:\n");
+scanf("%s", c_all);
+if(strncmp(c_all, "q", 1) == 0){
+	break;
+}
+printf("Please enter the starting key:\n");
+scanf("%s", k0_all);
+if(strncmp(k0_all, "q", 1) == 0){
+	break;
+}
+// Enable interrupts
+interrupts = 1;
+// Enable interrupts
+if(strncmp(p_all, "0x", 2) == 0){
+	strncpy(p_h, &p_all[2], 8);
+	strncpy(p_l, &p_all[10], 8);
+	p_h[BASE32_SIZE] = '\0';
+	p_l[BASE32_SIZE] = '\0';
+} else {
+	strncpy(p_h, &p_all[0], 8);
+	strncpy(p_l, &p_all[8], 8);
+	p_h[BASE32_SIZE] = '\0';
+	p_l[BASE32_SIZE] = '\0';
+}
+if(strncmp(c_all, "0x", 2) == 0){
+	strncpy(c_h, &c_all[2], 8);
+	strncpy(c_l, &c_all[10], 8);
+	c_h[BASE32_SIZE] = '\0';
+	c_l[BASE32_SIZE] = '\0';
+} else {
+	strncpy(c_h, &c_all[0], 8);
+	strncpy(c_l, &c_all[8], 8);
+	c_h[BASE32_SIZE] = '\0';
+	c_l[BASE32_SIZE] = '\0';
+}
+if(strncmp(k0_all, "0x", 2) == 0){
+	strncpy(k0_h, &k0_all[2], 8);
+	strncpy(k0_l, &k0_all[10], 8);
+	k0_h[BASE32_SIZE] = '\0';
+	k0_l[BASE32_SIZE] = '\0';
+} else {
+	strncpy(k0_h, &k0_all[0], 8);
+	strncpy(k0_l, &k0_all[8], 8);
+	k0_h[BASE32_SIZE] = '\0';
+	k0_l[BASE32_SIZE] = '\0';
+}
+```
+After that, we enable our interrupt:
 ```c
 interrupts = 1;
 // Enable interrupts
@@ -218,15 +264,25 @@ if(write(fd, &interrupts, sizeof(interrupts)) < 0) {
 ```
 The acquisition will not however start, as it waits for the writing on the higher part of the `k0` register to begin with:
 ```c
-// Plaintext
-regs[0] = 0xd55297ad;
-regs[1] = 0xbec7fa95;
+regs[0] = strtoul(p_l, NULL, 16);
+regs[1] = strtoul(p_h, NULL, 16);
+
+fflush(stdout);
+printf("Plain written %x%x\n", regs[0], regs[1]);
+fflush(stdout);
+
 // Cyphertext
-regs[2] = 0xd1b6fc54;
-regs[3] = 0x0f4b5674;
+regs[2] = strtoul(c_l, NULL, 16);
+regs[3] = strtoul(c_h, NULL, 16);
+fflush(stdout);
+printf("Cypher written %x%x\n", regs[2], regs[3]);
+fflush(stdout);
+
 // Starting secret key
-regs[4] = 0x9f2d5068; // right one terminates in 168
-regs[5] = 0x009473f4;
+regs[4] = strtoul(k0_l, NULL, 16);
+printf("k0 low written %x\n", regs[4]);
+regs[5] = strtoul(k0_h, NULL, 16);
+printf("k0 low written %x\n", regs[5]);
 ```
 Then at this point we call a blocking read which will wait for an interrupt to happen. In our case, this will occur on the rising edge of the `irq` signal.
 ```c
@@ -236,4 +292,11 @@ Then at this point we call a blocking read which will wait for an interrupt to h
    status = -1;
    break;
  }
+```
+Finally, the driver prints the obtained values:
+```c
+printf("Received %u interrupts\n", interrupts);
+// Read and display content of interface registers
+printf("Register 0: 0x%08x\n", regs[8]);
+printf("Register 1: 0x%08x\n", regs[9]);
 ```
