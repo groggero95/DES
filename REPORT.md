@@ -26,28 +26,51 @@ At the end, using the [synthesis script](./des_cracker.syn.tcl), a synthesis has
 In this section we will go through all the files that belong to the project, giving a brief explanation:
 * Design source files:
  * [`0_des_pkg.vhd`](./0_des_pkg.vhd): a package which contains constant declarations, functions and types that will be used in the design, as well as components to instantiate
+
  * [`1_ff.vhd`](./1_ff.vhd): a simple FF with arbitrary size, with synchronous and asynchronous reset in two different architecture, ready to be used in the upper layers
+
  * [`2_p_box.vhd`](./2_p_box.vhd): an entity that permutes the input accordingly to a constant table previously defined
+
  * [`3_s_box.vhd`](./3_s_box.vhd): this entity perform the substitution, as defined in the DES standard
+
  * [`4_k_gen.vhd`](./4_k_gen.vhd): generates the new key for the round, as specified by the standard
+
  * [`5_f.vhd`](./5_f.vhd): it executes a full round of the DES
+
  * [`6_des.vhd`](./6_des.vhd): this entity wraps the different stages of the DES enciphering, providing also a division into several stages of a pipeline
+
  * [`8_des_mux.vhd`](./8_des_mux.vhd): this entity provides an interface to instantiate and handle multiple DES cracker entity in parallel, by distributing the keys to test and finally checking if a correct key has been found to send to the upper layer
+
  * [`des_cracker.vhd`](./des_cracker.vhd): this is the top level entity, which wraps around and includes the control unit, as well as the `AXI` protocol to communicate with the memory
+
  * [`rnd_pkg.vhd`](./rnd_pkg.vhd): a package containing some functions and procedures to create random numbers
+
 * Simulation files:
+
  * [`7_des_tb.vhd`](./7_des_tb.vhd): stimulus for a simple DES simulation, to check the outputs at different stages and prepare a more complex testbench
+
  * [`9_des_mux_tb.vhd`](./9_des_mux_tb.vhd): simple simulation to check the reference behavior of multiple DES at once
+
  * [`des_cracker_tb.vhd`](./des_cracker_tb.vhd): a regular simulation for the wrapper, to check the correctness of the `AXI` protocol and its implementation for the wrapper
+
  * [`des_cracker_tb.py`](./des_cracker_tb.py): complete simulation of the wrapper, which takes as argument the number of tests to perform and the number of DES cracker to instantiate
+
  * [`des_mux.py`](./des_mux.py): a Python simulation to perform a series of test on several DES at the same time
+
  * [`des.py`](./des.py): a software implementation of the DES, to correctly encipher and check the results
+
  * [`modelsim.py`](./modelsim.py): declaration of classes and methods used to interface __ModelSim__ with Python, using a series of FIFO to communicate
+
  * [`sim.py`](./sim.py): a simulation of all the rounds of the DES, single entity
+ 
 * Other files:
+
  * [`des_cracker.syn.tcl`](./des_cracker.syn.tcl): synthesis script, with some modifications to explore more aggressively the timing optimizations
+
  * [`des_driver.c`](./des_driver.c): simple driver to write and read from the mapped registers used in the HW implementation of the cracker
+
  * [`des_cracker.timing.rpt`](./des_cracker.timing.rpt): synthesis timing report
+
  * [`des_cracker.utilization.rpt`](./des_cracker.utilization.rpt): synthesis area report
 
 ## Design:
@@ -64,8 +87,11 @@ The __control unit__, on the other hand, does not have a reserved file, but is i
 ![fsm_cu](figures/fsm_crack.png)
 
 Three states are present:
+
 * __WAIT__, used to wait for the correct start, given when the higher part of `k0` is written. In this case a transition to the __LOAD__ state is performed, to prepare the attack.
+
 * __START__, in this state the attack is fully running. If, by any chance, a write access to the `k0` register happens, the acquisition is stopped and the FSM goes back to __WAIT__ state
+
 * __FOUND__, final state in which the `irq` gets risen up, which that leads again to the __WAIT__ state
 
 ### Goal:
@@ -131,6 +157,7 @@ route_design -directive Explore
 With respect to the scripts used before during lectures, those options allows the synthesizer to run some more trials to better optimize the obtained result. Since the algorithms used are of course not of the "exact" type, but "heuristic" ones, it is more likely that better results are obtained, giving more possibilities to the software in charge of the physical floorplanning.
 
 As mentioned in the [description](#description), the two generated reports are included. We can focus on some parts we consider to be relevant:
+
 * as in can be seen in the [timing report](./des_cracker.timing.rpt), a clock having a frequency of `200 MHz` will still meet the timing constraint. Additionally, the critical path for the setup regards some control units signal, so we decided to stop with the improvements also on the signals which might violate the hold time, since it is very unlikely that there is sufficient margin to increase more the frequency.
 
 ```

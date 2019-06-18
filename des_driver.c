@@ -8,13 +8,16 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 // The device file
 #define DES_DEVICE  "/dev/uio0"
 // The size of the address space of our hardware peripheral
 #define DES_SIZE     0x1000
 // The des base address specified on the device tree
 #define DES_BASE     0x40000000
+// size for string contaning the variable
+#define BASE64_SIZE	16
+#define BASE32_SIZE	8
 
 int main(int argc, char **argv) {
 	int status = 0; // return status
@@ -26,11 +29,17 @@ int main(int argc, char **argv) {
 	volatile uint32_t *regs;
 
 	uint32_t interrupts; // interrupts counter
+	char p_l[BASE32_SIZE+1];
+	char p_h[BASE32_SIZE+1];
+	char c_l[BASE32_SIZE+1];
+	char c_h[BASE32_SIZE+1];
+	char k0_l[BASE32_SIZE+1];
+	char k0_h[BASE32_SIZE+1];
 
+	char p_all[2+BASE64_SIZE+1];
+	char c_all[2+BASE64_SIZE+1];
+	char k0_all[2+BASE64_SIZE+1];
 
-	uint32_t p_l, p_h;
-	uint32_t c_l , c_h;
-	uint32_t k0_l, k0_h;
 	char exit = '1';
 
 
@@ -59,7 +68,7 @@ int main(int argc, char **argv) {
 	printf("* 	-- Plaintext:															*\n");
 	printf("* 	-- Cyphertext:															*\n");
 	printf("* 	-- Starting key:														*\n");
-	printf("* Note that not all (plaintext,cyphertext) touple may have a solution		*\n");
+	printf("* Note that not all (plaintext,cyphertext) tuple may have a solution		*\n");
 	printf("* thus carefull considerations need to be made before starting the attack,	*\n");
 	printf("* in such a way you will not wait forever. In any case be pre[ared to wait 	*\n");
 	printf("* for a while, the zybo can only contain a few DES encriptor.				*\n");
@@ -69,17 +78,66 @@ int main(int argc, char **argv) {
 
 
 	// Infinite loop for command line interface
-	while (exit) {
+	while (1) {
 
 		printf("Please enter the plaintext:\n");
-	
+		scanf("%s", p_all);
+		if(strncmp(p_all, "q", 1) == 0){
+			break;
+		}
 		printf("Please enter the cyphertext:\n");
-	
+		scanf("%s", c_all);
+		if(strncmp(c_all, "q", 1) == 0){
+			break;
+		}
 		printf("Please enter the starting key:\n");
-
+		scanf("%s", k0_all);
+		if(strncmp(k0_all, "q", 1) == 0){
+			break;
+		}
 		// Enable interrupts
 		interrupts = 1;
 		// Enable interrupts
+		if(strncmp(p_all, "0x", 2) == 0){
+			strncpy(p_h, &p_all[2], 8);
+			strncpy(p_l, &p_all[10], 8);
+			p_h[BASE32_SIZE] = '\0';
+			p_l[BASE32_SIZE] = '\0';
+		} else {
+			strncpy(p_h, &p_all[0], 8);
+			strncpy(p_l, &p_all[8], 8);
+			p_h[BASE32_SIZE] = '\0';
+			p_l[BASE32_SIZE] = '\0';
+		}
+
+		if(strncmp(c_all, "0x", 2) == 0){
+			strncpy(c_h, &c_all[2], 8);
+			strncpy(c_l, &c_all[10], 8);
+			c_h[BASE32_SIZE] = '\0';
+			c_l[BASE32_SIZE] = '\0';
+		} else {
+			strncpy(c_h, &c_all[0], 8);
+			strncpy(c_l, &c_all[8], 8);
+			c_h[BASE32_SIZE] = '\0';
+			c_l[BASE32_SIZE] = '\0';
+		}
+
+		if(strncmp(k0_all, "0x", 2) == 0){
+			strncpy(k0_h, &k0_all[2], 8);
+			strncpy(k0_l, &k0_all[10], 8);
+			k0_h[BASE32_SIZE] = '\0';
+			k0_l[BASE32_SIZE] = '\0';
+		} else {
+			strncpy(k0_h, &k0_all[0], 8);
+			strncpy(k0_l, &k0_all[8], 8);
+			k0_h[BASE32_SIZE] = '\0';
+			k0_l[BASE32_SIZE] = '\0';
+		}
+
+
+
+
+
 		if (write(fd, &interrupts, sizeof(interrupts)) < 0) {
 			fprintf(stderr, "Cannot enable interrupts: %s\n", strerror(errno));
 			status = -1;
@@ -87,24 +145,24 @@ int main(int argc, char **argv) {
 		}
 
 
-		regs[0] = 0xd55297ad;
-		regs[1] = 0xbec7fa95;
+		regs[0] = strtoul(p_l, NULL, 16);
+		regs[1] = strtoul(p_h, NULL, 16);
 
 		fflush(stdout);
 		printf("Plain written %x%x\n", regs[0], regs[1]);
 		fflush(stdout);
 
 		// Cyphertext
-		regs[2] = 0xd1b6fc54;
-		regs[3] = 0x0f4b5674;
+		regs[2] = strtoul(c_l, NULL, 16);
+		regs[3] = strtoul(c_h, NULL, 16);
 		fflush(stdout);
 		printf("Cypher written %x%x\n", regs[2], regs[3]);
 		fflush(stdout);
 
 		// Starting secret key
-		regs[4] = 0x9f2d4068; // right one terminates in 5168
+		regs[4] = strtoul(k0_l, NULL, 16); // right one terminates in 5168
 		printf("k0 low written %x\n", regs[4]);
-		regs[5] = 0x009473f3; // supposeed to end in 3
+		regs[5] = strtoul(k0_h, NULL, 16); // supposeed to end in 3
 		printf("k0 low written %x\n", regs[5]);
 
 		// Wait for interrupt
@@ -128,4 +186,3 @@ int main(int argc, char **argv) {
 
 	return status;
 }
-
