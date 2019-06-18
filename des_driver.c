@@ -17,6 +17,7 @@
 #define DES_BASE     0x40000000
 // size for string contaning the variable
 #define BASE64_SIZE	16
+#define BASE56_SIZE	14
 #define BASE32_SIZE	8
 
 int main(int argc, char **argv) {
@@ -38,7 +39,7 @@ int main(int argc, char **argv) {
 
 	char p_all[2+BASE64_SIZE+1];
 	char c_all[2+BASE64_SIZE+1];
-	char k0_all[2+BASE64_SIZE+1];
+	char k0_all[2+BASE56_SIZE+1];
 
 	char exit = '1';
 
@@ -57,9 +58,9 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	for (int i = 0; i < 10; ++i, printf("*"));
+	for (int i = 0; i < 34; ++i, printf("*"));
 	printf("DES_CRACKER");
-	for (int i = 0; i < 10; ++i, printf("*"));
+	for (int i = 0; i < 35; ++i, printf("*"));
 	printf("\n");
 	printf("* This program allows you to interface with a custom pheripheral			*\n");
 	printf("* built in VHDL and embedded in the FPGA portion of this developer			*\n");
@@ -72,9 +73,9 @@ int main(int argc, char **argv) {
 	printf("* thus carefull considerations need to be made before starting the attack,	*\n");
 	printf("* in such a way you will not wait forever. In any case be pre[ared to wait 	*\n");
 	printf("* for a while, the zybo can only contain a few DES encriptor.				*\n");
-	for (int i = 0; i < 30; ++i, printf("*"));
+	for (int i = 0; i < 80; ++i, printf("*"));
 
-	printf("\nThe keyword 'q' can be used to exit the program whenever an input is requested\n");
+	printf("\n\nThe keyword 'q' can be used to exit the program whenever an input is requested\n");
 
 
 	// Infinite loop for command line interface
@@ -123,14 +124,14 @@ int main(int argc, char **argv) {
 		}
 
 		if(strncmp(k0_all, "0x", 2) == 0){
-			strncpy(k0_h, &k0_all[2], 8);
-			strncpy(k0_l, &k0_all[10], 8);
-			k0_h[BASE32_SIZE] = '\0';
+			strncpy(k0_h, &k0_all[2], 6);
+			strncpy(k0_l, &k0_all[8], 8);
+			k0_h[BASE56_SIZE/2] = '\0';
 			k0_l[BASE32_SIZE] = '\0';
 		} else {
-			strncpy(k0_h, &k0_all[0], 8);
-			strncpy(k0_l, &k0_all[8], 8);
-			k0_h[BASE32_SIZE] = '\0';
+			strncpy(k0_h, &k0_all[0], 6);
+			strncpy(k0_l, &k0_all[6], 8);
+			k0_h[BASE56_SIZE/2] = '\0';
 			k0_l[BASE32_SIZE] = '\0';
 		}
 
@@ -149,21 +150,21 @@ int main(int argc, char **argv) {
 		regs[1] = strtoul(p_h, NULL, 16);
 
 		fflush(stdout);
-		printf("Plain written %x%x\n", regs[0], regs[1]);
-		fflush(stdout);
+		// printf("Plain written %x%x\n", regs[1], regs[0]);
+		// fflush(stdout);
 
 		// Cyphertext
 		regs[2] = strtoul(c_l, NULL, 16);
 		regs[3] = strtoul(c_h, NULL, 16);
-		fflush(stdout);
-		printf("Cypher written %x%x\n", regs[2], regs[3]);
-		fflush(stdout);
+		// printf("Cypher written %x%x\n", regs[3], regs[2]);
+		// fflush(stdout);
 
 		// Starting secret key
 		regs[4] = strtoul(k0_l, NULL, 16);
-		printf("k0 low written %x\n", regs[4]);
 		regs[5] = strtoul(k0_h, NULL, 16);
-		printf("k0 low written %x\n", regs[5]);
+		// printf("k0  written %x%x\n", regs[5], regs[4]);
+
+		printf("\nMake yourself comfortable, it could take a while\n");
 
 		// Wait for interrupt
 		if (read(fd, &interrupts, sizeof(interrupts)) < 0) {
@@ -172,11 +173,8 @@ int main(int argc, char **argv) {
 			break;
 		}
 
-		printf("Received %u interrupts\n", interrupts);
-
 		// Read and display content of interface registers
-		printf("Register 0: 0x%08x\n", regs[8]);
-		printf("Register 1: 0x%08x\n", regs[9]);
+		printf("\nFound key: 0x%x%x\n\n", regs[9], regs[8]);
 	}
 
 	// Unmap
