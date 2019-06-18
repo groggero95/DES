@@ -241,14 +241,14 @@ if(strncmp(c_all, "0x", 2) == 0){
 	c_l[BASE32_SIZE] = '\0';
 }
 if(strncmp(k0_all, "0x", 2) == 0){
-	strncpy(k0_h, &k0_all[2], 8);
-	strncpy(k0_l, &k0_all[10], 8);
-	k0_h[BASE32_SIZE] = '\0';
+	strncpy(k0_h, &k0_all[2], 6);
+	strncpy(k0_l, &k0_all[8], 8);
+	k0_h[BASE56_SIZE/2] = '\0';
 	k0_l[BASE32_SIZE] = '\0';
 } else {
-	strncpy(k0_h, &k0_all[0], 8);
-	strncpy(k0_l, &k0_all[8], 8);
-	k0_h[BASE32_SIZE] = '\0';
+	strncpy(k0_h, &k0_all[0], 6);
+	strncpy(k0_l, &k0_all[6], 8);
+	k0_h[BASE56_SIZE/2] = '\0';
 	k0_l[BASE32_SIZE] = '\0';
 }
 ```
@@ -268,21 +268,19 @@ regs[0] = strtoul(p_l, NULL, 16);
 regs[1] = strtoul(p_h, NULL, 16);
 
 fflush(stdout);
-printf("Plain written %x%x\n", regs[0], regs[1]);
-fflush(stdout);
+// printf("Plain written %x%x\n", regs[1], regs[0]);
+// fflush(stdout);
 
 // Cyphertext
 regs[2] = strtoul(c_l, NULL, 16);
 regs[3] = strtoul(c_h, NULL, 16);
-fflush(stdout);
-printf("Cypher written %x%x\n", regs[2], regs[3]);
-fflush(stdout);
+// printf("Cypher written %x%x\n", regs[3], regs[2]);
+// fflush(stdout);
 
 // Starting secret key
 regs[4] = strtoul(k0_l, NULL, 16);
-printf("k0 low written %x\n", regs[4]);
 regs[5] = strtoul(k0_h, NULL, 16);
-printf("k0 low written %x\n", regs[5]);
+// printf("k0  written %x%x\n", regs[5], regs[4]);
 ```
 Then at this point we call a blocking read which will wait for an interrupt to happen. In our case, this will occur on the rising edge of the `irq` signal.
 ```c
@@ -295,8 +293,6 @@ Then at this point we call a blocking read which will wait for an interrupt to h
 ```
 Finally, the driver prints the obtained values:
 ```c
-printf("Received %u interrupts\n", interrupts);
 // Read and display content of interface registers
-printf("Register 0: 0x%08x\n", regs[8]);
-printf("Register 1: 0x%08x\n", regs[9]);
+printf("\nFound key: 0x%x%x\n\n", regs[9], regs[8]);
 ```
